@@ -1,0 +1,163 @@
+SDII Group D Project - JavaFX Game
+- Deliwe Mufute
+- Miguel Cofre
+- Emmanuel Ayobanjo
+- Victoria Adeosun
+- Paahki Agrawala
+==================================
+
+Project Setup
+-------------
+This project is a JavaFX-based vertical scrolling game (like a simplified Temple Run) using Maven.
+
+Requirements:
+- JDK 21 installed
+- Maven installed
+- Personal Access Token (PAT) for GitLab (required for HTTPS access)
+
+---
+
+Cloning the Repository
+---------------------
+1. Each teammate must create their own Personal Access Token (PAT) in GitLab:
+   - Go to GitLab → User Settings → Access Tokens
+   - Scopes required: api or write_repository
+   - Copy the token for later use
+
+2. Clone the repository via HTTPS:
+
+   git clone https://gitlab.griffith.ie/<your-username>/SDII_Group_D_Project.git
+   cd SDII_Group_D_Project
+
+3. When pushing/pulling for the first time:
+   - Username: your GitLab username
+   - Password: paste your Personal Access Token
+
+---
+
+Running the Game
+----------------
+To run the project, use the Maven command from the project root (where pom.xml is located):
+
+   mvn clean javafx:run
+
+Notes:
+- This ensures all JavaFX dependencies are handled automatically.
+- Do not rely on the IDE green “Run” button — it will not work without extra configuration. I know it sounds confusing but believe me... Its for the best.
+
+---
+
+Project Structure
+-----------------
+src/main/java/org/example/
+    Main.java       # Entry point
+    menu/           # Package for menu-related classes
+        MenuScene.java
+    game/           # Package for gameplay classes
+        GameScene.java
+        Player.java
+        Obstacle.java
+    utils/          # Any code that can be reused on multiple classes we will move it here
+        calculators.java
+
+- Keep new classes organized under their proper package (`menu` or `game`).
+
+---
+
+Git Workflow
+------------
+- Work on feature branches:
+
+   git checkout -b feature/<feature-name> 
+
+- Commit your changes:
+
+   git add .
+   git commit -m "Descriptive message"
+
+- Push your branch:
+
+   git push -u origin feature/<feature-name>
+
+- Merge into main using GitLab Merge Requests.
+
+---
+Miguel: I'll try to set tasks for development for everyone weekly... 
+        Request a merge on git and we should take turns to check for
+        errors before the week ends.
+---
+
+---
+
+Notes
+-----
+- Everyone uses their own PAT - You all probably know this already
+- All teammates must run mvn clean javafx:run to ensure JavaFX runs correctly.
+- Keep the repo structure clean; organize new classes logically.
+
+----------------------------------
+###### Mac-Specific Notes #######
+----------------------------------
+
+1. **Java Installation**
+- Ensure you have a JDK installed. macOS often comes with an older version by default.
+- Check your version:
+      java -version
+- If you need a newer version (we are defining noooooow that we will use Java 21), download from:
+  https://www.oracle.com/java/technologies/downloads/
+
+2. **Maven Installation**
+- macOS may not come with Maven preinstalled.
+- Check Maven version:
+      mvn -v
+- If not installed, use Homebrew:
+      brew install maven
+
+3. **Environment Variables**
+- macOS may require setting JAVA_HOME explicitly.
+- Add this to your shell config (~/.zshrc or ~/.bash_profile):
+      export JAVA_HOME=$(/usr/libexec/java_home)
+      export PATH=$JAVA_HOME/bin:$PATH
+- Reload shell:
+      source ~/.zshrc
+
+4. **Running the Game**
+- Use the same Maven command as Windows:
+      mvn clean javafx:run
+- If you see errors about JavaFX runtime, ensure your JavaFX dependencies in pom.xml are correct and for macOS. There's a chance that you may need to add this line to the pom.xml:
+      <classifier>mac</classifier>
+- For example:
+      <dependency>
+          <groupId>org.openjfx</groupId>
+          <artifactId>javafx-controls</artifactId>
+          <version>21</version>
+          <classifier>mac</classifier>
+      </dependency>
+
+5. **File Paths**
+- macOS paths are case-sensitive. Make sure all folder and package names match exactly.
+- Example: `game/Player.java` → `package game;` (not `Game;`).
+
+6. **Line Endings**
+- Git handles line endings differently on macOS vs Windows.
+- To avoid issues, ensure `.gitattributes` (optional) is configured:
+      * text=auto
+- Or rely on Git’s default auto-conversion.
+
+7. **IDE Notes (IntelliJ)**
+- IntelliJ works similarly, but preferences paths differ:
+  - `.idea/` folder will be ignored by `.gitignore` (as in Windows)
+  - Ensure your JDK is set in IntelliJ Preferences → Project → Project SDK
+
+8. **Common Errors and Fixes**
+- `Error: JavaFX runtime components are missing` → check JDK and pom.xml classifiers
+- `Permission denied` when running Maven → ensure file permissions are correct:
+      chmod +x mvnw
+- Any Git authentication issues → ensure using GitLab Personal Access Token (PAT) for HTTPS
+
+---
+**Tip:** Paakhi and Victoria. Please test the run command:
+
+      mvn clean javafx:run
+
+  immediately after cloning to make sure JavaFX runs correctly on macOS.
