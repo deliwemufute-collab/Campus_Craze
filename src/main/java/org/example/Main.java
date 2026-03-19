@@ -13,7 +13,7 @@ public class Main extends Application {
         Label label = new Label("If you guys are seeing this on the JavaFx screen... it means you did everything correctly... CONGRATS!");
         StackPane root = new StackPane(label);
 
-        Scene scene = new Scene(root, 800, 600);
+        Scene scene = new Scene(root, 1024,768 );
 
         stage.setTitle("SDII Game Project");
         stage.setScene(scene);
