@@ -1,6 +1,7 @@
 package org.example.game;
 
 import javafx.animation.AnimationTimer;
+import javafx.scene.image.Image;
 import javafx.scene.layout.Pane;
 import org.example.utils.AssetLoader;
 
@@ -84,8 +85,13 @@ public class GameScene {
         }
 
         System.out.println("GameScene: " + TILE_COUNT + " initial scenery tiles spawned.");
-    }
+        //   Player Object Created
+        Image playerImage = new Image("https://via.placeholder.com/60");
 
+        player = new Player(playerImage, screenWidth / 2, screenHeight - 150);
+
+        gamePane.getChildren().add(player.getSprite());
+    }
     /**
      * Starts the JavaFX AnimationTimer game loop.
      * Each frame: scrollTiles() is called on SceneryManager.
