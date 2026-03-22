@@ -85,6 +85,23 @@ public class Player {
 
     public void updatePosition() {
         // Update sprite position on screen if needed. Handled by DELIWE MUFUTE
+        if (movingLeft) {
+            x -= speed;
+        }
+
+        if (movingRight) {
+            x += speed;
+        }
+
+        // Keep player inside screen
+        if (x < minX) {
+            x = minX;
+        }
+
+        if (x > maxX - width) {
+            x = maxX - width;
+        }
+
         sprite.setX(x);
         sprite.setY(y);
     }
