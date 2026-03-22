@@ -117,8 +117,9 @@ public class GameScene {
         // Scroll the background scenery
         sceneryManager.scrollTiles();
 
-        // Player movement — to be implemented by Deliwe Mufute
+        // Player movement
         // if (player != null) player.updatePosition();
+        player.updatePosition();
 
         // Collision detection — to be implemented by Paakhi Agrawala
     }
