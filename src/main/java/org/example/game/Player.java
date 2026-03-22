@@ -68,11 +68,19 @@ public class Player {
 
     // Placeholder methods for movement
     public void moveLeft() {
-        // To be implemented by DELIWE MUFUTE
+        movingLeft = true;
     }
 
     public void moveRight() {
-        // To be implemented by DELIWE MUFUTE
+        movingRight = true;
+
+    }
+    public void stopLeft() {
+        movingLeft = false;
+    }
+
+    public void stopRight() {
+        movingRight = false;
     }
 
     public void updatePosition() {
