@@ -15,8 +15,8 @@ import org.example.utils.AssetLoader;
 public class GameScene {
 
     // --- Constants ---
-    private static final double SCREEN_WIDTH  = 400.0;
-    private static final double SCREEN_HEIGHT = 700.0;
+    private final double screenWidth;
+    private final double screenHeight;
     private static final double SCROLL_SPEED  = 3.0;   // pixels per frame
     private static final int    TILE_COUNT    = 3;      // tiles needed to fill screen
 
@@ -36,12 +36,18 @@ public class GameScene {
 
     /**
      * Constructor: wires up the pane and initialises placeholders.
+     * Resolution is recycled from Main (1024 x 768).
      *
-     * @param pane the JavaFX Pane this scene renders into
+     * @param pane   the JavaFX Pane this scene renders into
+     * @param width  screen width passed from Main
+     * @param height screen height passed from Main
      */
-    public GameScene(Pane pane) {
-        this.gamePane  = pane;
-        this.player    = null;           // To be set by Deliwe Mufute
+    public GameScene(Pane pane, double width, double height) {
+        this.gamePane     = pane;
+        this.screenWidth  = width;
+        this.screenHeight = height;
+
+        this.player    = null;            // To be set by Deliwe Mufute
         this.obstacles = new Obstacle[0]; // To be set by Paakhi Agrawala
     }
 
@@ -60,8 +66,8 @@ public class GameScene {
         sceneryManager = new SceneryManager(
                 gamePane,
                 SCROLL_SPEED,
-                SCREEN_HEIGHT,
-                SCREEN_WIDTH
+                screenHeight,
+                screenWidth
         );
         sceneryManager.setSceneryVariants(assetLoader.getSceneryVariants());
 
@@ -70,7 +76,7 @@ public class GameScene {
         // Tile height is read from the first loaded image.
         double tileHeight = assetLoader.getSceneryVariants()[0] != null
                 ? assetLoader.getSceneryVariants()[0].getHeight()
-                : SCREEN_HEIGHT / TILE_COUNT;
+                : screenHeight / TILE_COUNT;
 
         for (int i = 0; i < TILE_COUNT; i++) {
             sceneryManager.spawnTile(i * tileHeight);
