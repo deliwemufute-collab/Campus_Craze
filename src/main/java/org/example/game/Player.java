@@ -18,6 +18,17 @@ public class Player {
     private double width;
     private double height;
 
+    // Movement flags
+    private boolean movingLeft = false;
+    private boolean movingRight = false;
+
+    // Speed
+    private double speed = 5;
+
+    // Screen boundaries
+    private double minX = 0;
+    private double maxX = 1024;
+
     // Constructor
     public Player(Image spriteImage, double startX, double startY) {
         this.sprite = new ImageView(spriteImage);

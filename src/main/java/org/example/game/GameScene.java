@@ -14,6 +14,7 @@ import org.example.utils.AssetLoader;
  */
 public class GameScene {
 
+
     // --- Constants ---
     private final double screenWidth;
     private final double screenHeight;
