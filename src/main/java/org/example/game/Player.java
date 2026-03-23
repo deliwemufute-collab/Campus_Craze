@@ -18,8 +18,19 @@ public class Player {
     private double width;
     private double height;
 
+    // Movement flags
+    private boolean movingLeft = false;
+    private boolean movingRight = false;
+
+    // Speed
+    private double speed = 5;
+
+    // Screen boundaries
+    private double minX = 0;
+    private double maxX ;
+
     // Constructor
-    public Player(Image spriteImage, double startX, double startY) {
+    public Player(Image spriteImage, double startX, double startY,double screenWidth) {
         this.sprite = new ImageView(spriteImage);
         this.x = startX;
         this.y = startY;
@@ -28,6 +39,7 @@ public class Player {
 
         this.width = sprite.getImage().getWidth();
         this.height = sprite.getImage().getHeight();
+        this.maxX =screenWidth;
     }
 
     // Getters and setters
@@ -57,15 +69,40 @@ public class Player {
 
     // Placeholder methods for movement
     public void moveLeft() {
-        // To be implemented by DELIWE MUFUTE
+        movingLeft = true;
     }
 
     public void moveRight() {
-        // To be implemented by DELIWE MUFUTE
+        movingRight = true;
+
+    }
+    public void stopLeft() {
+        movingLeft = false;
+    }
+
+    public void stopRight() {
+        movingRight = false;
     }
 
     public void updatePosition() {
         // Update sprite position on screen if needed. Handled by DELIWE MUFUTE
+        if (movingLeft) {
+            x -= speed;
+        }
+
+        if (movingRight) {
+            x += speed;
+        }
+
+        // Keep player inside screen
+        if (x < minX) {
+            x = minX;
+        }
+
+        if (x > maxX - width) {
+            x = maxX - width;
+        }
+
         sprite.setX(x);
         sprite.setY(y);
     }

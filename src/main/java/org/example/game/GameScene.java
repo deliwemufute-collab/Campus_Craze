@@ -1,6 +1,8 @@
 package org.example.game;
 
 import javafx.animation.AnimationTimer;
+import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.scene.layout.Pane;
 import org.example.utils.AssetLoader;
 
@@ -13,6 +15,7 @@ import org.example.utils.AssetLoader;
  * @author Emmanuel Ayobanjo — SceneryManager integration & dummy loop test
  */
 public class GameScene {
+
 
     // --- Constants ---
     private final double screenWidth;
@@ -83,8 +86,13 @@ public class GameScene {
         }
 
         System.out.println("GameScene: " + TILE_COUNT + " initial scenery tiles spawned.");
-    }
+        //   Player Object Created
+        Image playerImage = new Image("https://via.placeholder.com/60");
 
+        player = new Player(playerImage, screenWidth / 2, screenHeight - 150,screenWidth);
+
+        gamePane.getChildren().add(player.getSprite());
+    }
     /**
      * Starts the JavaFX AnimationTimer game loop.
      * Each frame: scrollTiles() is called on SceneryManager.
@@ -101,6 +109,27 @@ public class GameScene {
         gameLoop.start();
         System.out.println("GameScene: game loop started.");
     }
+    //...KeyBoard input
+    public void setupKeyboard(Scene scene) {
+
+        scene.setOnKeyPressed(e -> {
+            if (player == null) return;
+
+            switch (e.getCode()) {
+                case LEFT -> player.moveLeft();
+                case RIGHT -> player.moveRight();
+            }
+        });
+
+        scene.setOnKeyReleased(e -> {
+            if (player == null) return;
+
+            switch (e.getCode()) {
+                case LEFT -> player.stopLeft();
+                case RIGHT -> player.stopRight();
+            }
+        });
+    }
 
     /**
      * Called every frame by the AnimationTimer.
@@ -110,8 +139,9 @@ public class GameScene {
         // Scroll the background scenery
         sceneryManager.scrollTiles();
 
-        // Player movement — to be implemented by Deliwe Mufute
+        // Player movement
         // if (player != null) player.updatePosition();
+        player.updatePosition();
 
         // Collision detection — to be implemented by Paakhi Agrawala
     }
