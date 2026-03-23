@@ -27,10 +27,10 @@ public class Player {
 
     // Screen boundaries
     private double minX = 0;
-    private double maxX = 1024;
+    private double maxX ;
 
     // Constructor
-    public Player(Image spriteImage, double startX, double startY) {
+    public Player(Image spriteImage, double startX, double startY,double screenWidth) {
         this.sprite = new ImageView(spriteImage);
         this.x = startX;
         this.y = startY;
@@ -39,6 +39,7 @@ public class Player {
 
         this.width = sprite.getImage().getWidth();
         this.height = sprite.getImage().getHeight();
+        this.maxX =screenWidth;
     }
 
     // Getters and setters

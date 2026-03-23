@@ -89,7 +89,7 @@ public class GameScene {
         //   Player Object Created
         Image playerImage = new Image("https://via.placeholder.com/60");
 
-        player = new Player(playerImage, screenWidth / 2, screenHeight - 150);
+        player = new Player(playerImage, screenWidth / 2, screenHeight - 150,screenWidth);
 
         gamePane.getChildren().add(player.getSprite());
     }
