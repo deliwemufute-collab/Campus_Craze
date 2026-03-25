@@ -66,7 +66,9 @@ public class SceneryTile {
      * Returns the height of the tile image, used by SceneryManager
      * to calculate tile stacking and offscreen detection.
      */
+
     public double getHeight() {
+        if (sprite.getImage() == null) return 192; // default tile height from guidelines
         return sprite.getImage().getHeight();
     }
 }
