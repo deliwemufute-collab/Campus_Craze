@@ -12,6 +12,7 @@ import javafx.scene.layout.Pane;
  *
  * @author Miguel Cofre      — GameScene structure
  * @author Emmanuel Ayobanjo — SceneryManager integration & dummy loop test
+ * @author  Victoria Adeosun — HUDManager & UI
  */
 public class GameScene {
 
@@ -28,6 +29,7 @@ public class GameScene {
     // --- Game objects ---
     private Player player;           // Set by Deliwe Mufute
     private ObstacleManager obstacleManager;    // Set by Paakhi Agrawala
+    private HUDManager hudManager; // Set by Victoria Adeosun
 
     // --- Scenery (Emmanuel Ayobanjo) ---
     private SceneryManager sceneryManager;
@@ -102,6 +104,10 @@ public class GameScene {
         obstacleManager.spawnObstacle(640, -350);
 
         System.out.println("GameScene: dummy obstacles spawned.");
+
+        // set up HUD  by Victoria Adeosun
+        hudManager = new HUDManager(gamePane);
+        hudManager.setupHUD();
     }
 
     /**
