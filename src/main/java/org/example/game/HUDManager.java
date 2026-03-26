@@ -28,7 +28,7 @@ public class HUDManager {
         // To be implemented: position labels, add to hudPane
     }
 
-    // Update HUD values (skeleton)
+    // Update HUD values
     public void updateScore(int score) {
         scoreLabel.setText("Score: " + score);
     }

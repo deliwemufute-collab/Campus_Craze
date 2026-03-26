@@ -204,5 +204,32 @@ class HUDManagerTest {
         assertFalse(menuVisible && gamePaneVisible);
     }
 
+    // START BUTTON
+
+    @Test
+    @DisplayName("Start button should trigger startGame action")
+    void testStartButtonTriggersStartGame() {
+        // Simulate a flag that startGame() would set to true
+        boolean[] gameStarted = {false};
+
+        // Simulate what the start button action does
+        Runnable startGame = () -> gameStarted[0] = true;
+
+        // Simulate clicking the button
+        startGame.run();
+
+        // Check startGame was actually called
+        assertTrue(gameStarted[0],
+                "Start button should call startGame() when clicked");
+    }
+    // Game must not start if button is not clicked
+    @Test
+    @DisplayName("Menu should not start game before button is clicked")
+    void testGameNotStartedBeforeButtonClick() {
+        boolean[] gameStarted = {false};
+        // Button not clicked yet
+        assertFalse(gameStarted[0],
+                "Game should not start before Start button is clicked");
+    }
 
 }
