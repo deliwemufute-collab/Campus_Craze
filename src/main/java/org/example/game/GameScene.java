@@ -4,7 +4,6 @@ import javafx.animation.AnimationTimer;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.scene.layout.Pane;
-import org.example.utils.AssetLoader;
 
 /**
  * Manages the gameplay screen.
@@ -28,11 +27,10 @@ public class GameScene {
 
     // --- Game objects ---
     private Player player;           // Set by Deliwe Mufute
-    private Obstacle[] obstacles;    // Set by Paakhi Agrawala
+    private ObstacleManager obstacleManager;    // Set by Paakhi Agrawala
 
     // --- Scenery (Emmanuel Ayobanjo) ---
     private SceneryManager sceneryManager;
-    private AssetLoader assetLoader;
 
     // --- Game loop ---
     private AnimationTimer gameLoop;
@@ -51,7 +49,6 @@ public class GameScene {
         this.screenHeight = height;
 
         this.player    = null;            // To be set by Deliwe Mufute
-        this.obstacles = new Obstacle[0]; // To be set by Paakhi Agrawala
     }
 
     /**
@@ -61,9 +58,16 @@ public class GameScene {
      * Victoria Adeosun will expand this with HUD + additional object setup.
      */
     public void initializeGameObjects() {
-        // --- Load all 16 scenery asset variants ---
-        assetLoader = new AssetLoader();
-        assetLoader.loadSceneryAssets();
+
+        // --- Load scenery images directly from resources ---
+        Image[] sceneryVariants = new Image[]{
+                new Image(getClass().getResourceAsStream("/Tiles/dummy_tile_start.png")),
+                new Image(getClass().getResourceAsStream("/Tiles/dummy_tile_mid_1.png")),
+                new Image(getClass().getResourceAsStream("/Tiles/dummy_tile_mid_2.png")),
+                new Image(getClass().getResourceAsStream("/Tiles/dummy_tile_mid_3.png")),
+                new Image(getClass().getResourceAsStream("/Tiles/dummy_tile_mid_4.png")),
+                new Image(getClass().getResourceAsStream("/Tiles/dummy_tile_end.png"))
+        };
 
         // --- Set up SceneryManager ---
         sceneryManager = new SceneryManager(
@@ -72,27 +76,34 @@ public class GameScene {
                 screenHeight,
                 screenWidth
         );
-        sceneryManager.setSceneryVariants(assetLoader.getSceneryVariants());
+        sceneryManager.setSceneryVariants(sceneryVariants);
 
         // --- Spawn initial tiles to fill the screen top-to-bottom ---
         // Tiles are stacked so there is no gap when scrolling starts.
         // Tile height is read from the first loaded image.
-        double tileHeight = assetLoader.getSceneryVariants()[0] != null
-                ? assetLoader.getSceneryVariants()[0].getHeight()
-                : screenHeight / TILE_COUNT;
-
+        double tileHeight = sceneryVariants[0].getHeight();
         for (int i = 0; i < TILE_COUNT; i++) {
             sceneryManager.spawnTile(i * tileHeight);
         }
 
-        System.out.println("GameScene: " + TILE_COUNT + " initial scenery tiles spawned.");
-        //   Player Object Created
-        Image playerImage = new Image("https://via.placeholder.com/60");
+        System.out.println("GameScene: scenery tiles spawned.");
 
-        player = new Player(playerImage, screenWidth / 2, screenHeight - 150,screenWidth);
-
+        // --- Set up Player ---
+        Image playerImage = new Image(getClass().getResourceAsStream("/Player/player_dummy.png"));
+        player = new Player(playerImage, screenWidth / 2, screenHeight - 150, screenWidth);
         gamePane.getChildren().add(player.getSprite());
+
+        // --- Set up ObstacleManager (Paakhi Agrawala) ---
+        obstacleManager = new ObstacleManager(gamePane);
+
+// initial dummy obstacles
+        obstacleManager.spawnObstacle(380, 150);
+        obstacleManager.spawnObstacle(512, -100);
+        obstacleManager.spawnObstacle(640, -350);
+
+        System.out.println("GameScene: dummy obstacles spawned.");
     }
+
     /**
      * Starts the JavaFX AnimationTimer game loop.
      * Each frame: scrollTiles() is called on SceneryManager.
@@ -109,6 +120,7 @@ public class GameScene {
         gameLoop.start();
         System.out.println("GameScene: game loop started.");
     }
+
     //...KeyBoard input
     public void setupKeyboard(Scene scene) {
 
@@ -140,10 +152,10 @@ public class GameScene {
         sceneryManager.scrollTiles();
 
         // Player movement
-        // if (player != null) player.updatePosition();
         player.updatePosition();
 
-        // Collision detection — to be implemented by Paakhi Agrawala
+        // Scroll obstacles with scenery
+        obstacleManager.scrollObstacles(screenHeight);
     }
 
     // --- Getters ---

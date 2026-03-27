@@ -116,14 +116,19 @@ public class SceneryManager {
      * @param tile the tile to recycle
      */
     private void recycleTile(SceneryTile tile) {
-        // Move tile back above the screen (just off the top)
+        // Move tile back above the screen
         tile.setY(-tile.getHeight());
 
         // Assign next variant so the scenery keeps changing
         Image variant = sceneryVariants[nextVariantIndex % sceneryVariants.length];
         nextVariantIndex++;
-        tile.setImage(variant);
+
+        // Only set image if it's not null
+        if (variant != null) {
+            tile.setImage(variant);
+        }
     }
+
 
     // Getters
     public List<SceneryTile> getTiles() {

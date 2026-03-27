@@ -2,11 +2,19 @@ package org.example.game;
 
 import javafx.scene.image.Image;
 import org.junit.jupiter.api.*;
+import com.sun.javafx.application.PlatformImpl;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class PlayerTest {
     private Player player;
+
+
+    // Boot the JavaFX runtime before tests run, as JUnit does not start it automatically
+    @BeforeAll
+    static void initToolkit() throws Exception {
+        PlatformImpl.startup(() -> {});
+    }
 
     @BeforeEach
     void setUp() {
