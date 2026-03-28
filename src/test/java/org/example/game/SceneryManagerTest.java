@@ -24,11 +24,11 @@ public class SceneryManagerTest {
         testPane = new Pane();
         manager = new SceneryManager(testPane, 3.0, 768, 1024);
 
-        // Set up 3 dummy variants (enough to test cycling without loading 16 real images)
+        // Use real local assets so image dimensions are available during scroll/recycle tests
         testVariants = new Image[]{
-                new Image("https://via.placeholder.com/100"),
-                new Image("https://via.placeholder.com/200"),
-                new Image("https://via.placeholder.com/300")
+                new Image(SceneryManagerTest.class.getResourceAsStream("/Tiles/dummy_tile_start.png")),
+                new Image(SceneryManagerTest.class.getResourceAsStream("/Tiles/dummy_tile_mid_1.png")),
+                new Image(SceneryManagerTest.class.getResourceAsStream("/Tiles/dummy_tile_mid_2.png"))
         };
         manager.setSceneryVariants(testVariants);
     }
