@@ -19,7 +19,10 @@ public class SceneryTileTest {
 
     @BeforeEach
     void setUp() {
-        testImage = new Image("https://via.placeholder.com/100");
+        // Use a real local asset so image dimensions are available in tests
+        testImage = new Image(
+                SceneryTileTest.class.getResourceAsStream("/Tiles/dummy_tile_start.png")
+        );
         tile = new SceneryTile(testImage, 50, 100);
     }
 
@@ -50,14 +53,16 @@ public class SceneryTileTest {
 
     @Test
     void testSetImageSwapsImage() {
-        Image newImage = new Image("https://via.placeholder.com/200");
+        Image newImage = new Image(
+                SceneryTileTest.class.getResourceAsStream("/Tiles/dummy_tile_mid_1.png")
+        );
         tile.setImage(newImage);
         assertEquals(newImage, tile.getSprite().getImage());
     }
 
     @Test
     void testGetHeightReturnsImageHeight() {
-        // placeholder image is 100px tall — getHeight() should reflect that
+        // Real local image should have a positive height
         assertTrue(tile.getHeight() > 0);
     }
 
