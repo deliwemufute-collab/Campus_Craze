@@ -13,6 +13,7 @@ public class HUDManager {
     // UI elements placeholders
     private Label scoreLabel;
     private Label livesLabel;
+    private Label coinsLabel;
 
     // Constructor
     public HUDManager(Pane pane) {
@@ -21,14 +22,28 @@ public class HUDManager {
         // Initialize placeholders
         this.scoreLabel = new Label("Score: 0");
         this.livesLabel = new Label("Lives: 3");
+        this.coinsLabel = new Label("Coins: 0");
     }
 
     // Setup HUD layout
     public void setupHUD() {
-        // To be implemented: position labels, add to hudPane
+        scoreLabel.setLayoutX(10);
+        scoreLabel.setLayoutY(10);
+        scoreLabel.setStyle("-fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold;");
+
+        livesLabel.setLayoutX(10);
+        livesLabel.setLayoutY(35);
+        livesLabel.setStyle("-fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold;");
+
+
+        coinsLabel.setLayoutX(10);
+        coinsLabel.setLayoutY(60);
+        coinsLabel.setStyle("-fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold;");
+
+        hudPane.getChildren().addAll(scoreLabel, livesLabel, coinsLabel);
     }
 
-    // Update HUD values (skeleton)
+    // Update HUD values
     public void updateScore(int score) {
         scoreLabel.setText("Score: " + score);
     }
@@ -36,6 +51,8 @@ public class HUDManager {
     public void updateLives(int lives) {
         livesLabel.setText("Lives: " + lives);
     }
+
+    public void updateCoins(int coins) { coinsLabel.setText("Coins: " + coins); }
 
     // Getters
     public Pane getHudPane() {
@@ -48,5 +65,9 @@ public class HUDManager {
 
     public Label getLivesLabel() {
         return livesLabel;
+    }
+
+    public Label getCoinsLabel() {
+        return coinsLabel;
     }
 }

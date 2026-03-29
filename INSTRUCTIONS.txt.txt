@@ -111,7 +111,7 @@ Notes
 - Check Maven version:
       mvn -v
 - If not installed, use Homebrew:
-      brew install maven
+      brew install mavenjava
 
 3. **Environment Variables**
 - macOS may require setting JAVA_HOME explicitly.
