@@ -2,119 +2,148 @@ package org.example.game;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import javafx.scene.layout.Pane;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.example.menu.MenuScene;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author : Victoria Adeosun
- * Branch: feature/ui-manager-victoriaAdeosun
  * These tests check HUDManager logic
  */
 class HUDManagerTest {
+
+    private HUDManager hud;
+    private Pane testPane;
+
+    // start JavaFX before any tests run
+    @BeforeAll
+    static void initToolkit() throws Exception {
+        com.sun.javafx.application.PlatformImpl.startup(() -> {});
+    }
+
+    // create a fresh HUDManager before each test
+    @BeforeEach
+    void setUp() {
+        testPane = new Pane();
+        hud = new HUDManager(testPane);
+    }
 
     // SCORE TESTING
 
     // Test to verify that the score label initializes correctly
     @Test
-    @DisplayName("Score label text should start as 'Score: 0'")
+    @DisplayName("Score label should not be null after construction")
     void testScoreLabelInitialText() {
-        String expected = "Score: 0";
-        String actual = "Score: " + 0;
-        assertEquals(expected, actual);
+        assertNotNull(hud.getScoreLabel());
     }
 
     // Test to verify that the lives label initializes correctly
     @Test
-    @DisplayName("Lives label text should start as 'Lives: 3'")
-    void testLivesLabelInitialText() {
-        String expected = "Lives: 3";
-        String actual = "Lives: " + 3;
-        assertEquals(expected, actual);
+    @DisplayName("Score label should show Score: 0 at start")
+    void testScoreLabelStartsAtZero() {
+            assertEquals("Score: 0", hud.getScoreLabel().getText());
     }
 
-    // Test to verify that the score label updates correctly after score change
+    // check if updateScore actually changes the label
     @Test
-    @DisplayName("Score label format should update correctly")
-    void testScoreLabelFormat() {
-        int score = 100;
-        String expected = "Score: 100";
-        String actual = "Score: " + score;
-        assertEquals(expected, actual);
+    @DisplayName("update Score should update the label text")
+    void testUpdateScoreChangesLabel() {
+        hud.updateScore(100);
+        assertEquals("Score: 100", hud.getScoreLabel().getText());
+    }
+    // check multiple score updates show latest value
+    @Test
+    @DisplayName("Score label should always show latest value")
+    void testUpdateScoreMultipleTimes() {
+        hud.updateScore(50);
+        hud.updateScore(200);
+        hud.updateScore(350);
+        assertEquals("Score: 350", hud.getScoreLabel().getText());
+    }
+    // check if score resets to 0
+    @Test
+    @DisplayName("Score label should reset to 0")
+    void testUpdateScoreResetsToZero() {
+        hud.updateScore(500);
+        hud.updateScore(0);
+        assertEquals("Score: 0", hud.getScoreLabel().getText());
     }
 
-    // Test to ensure score cannot be negative
-    @Test
-    @DisplayName("Score should never be negative")
-    void testScoreIsNeverNegative() {
-        int score = 0;
-        assertTrue(score >= 0);
-    }
-
-    // Test that a score of 0 displays correctly
-    @Test
-    @DisplayName("Score of 0 should display as Score: 0")
-    void testScoreZeroDisplay() {
-        int score = 0;
-        assertEquals("Score: 0", "Score: " + score);
-    }
-
-    // Test that the score increases correctly
-    @Test
-    @DisplayName("Score increases correctly")
-    void testScoreIncreases() {
-        int score = 0;
-        score = score + 50;
-        score = score + 50;
-        assertEquals(100, score);
-    }
 
     // LIVES TESTING
 
     // test to verify that the lives label updates correctly after losing a life
     @Test
-    @DisplayName("Lives label format should update correctly")
-    void testLivesLabelFormat() {
-        int lives = 2;
-        String expected = "Lives: 2";
-        String actual = "Lives: " + lives;
-        assertEquals(expected, actual);
-    }
-
-    // Test that zero lives display correctly (game over scenario)
-    @Test
-    @DisplayName("Lives of 0 should display as Lives: 0 - game over")
-    void testLivesZeroDisplay() {
-        int lives = 0;
-        assertEquals("Lives: 0", "Lives: " + lives);
+    @DisplayName("Lives label should not be null after construction")
+    void testLivesLabelIsNotNull() {
+        assertNotNull(hud.getLivesLabel());
     }
 
     // Test to verify that lives start at 3 by default
     @Test
     @DisplayName("Lives should start at 3")
-    void testLivesStartAtThree() {
-        int lives = 3;
-        assertEquals(3, lives);
+    void testLivesLabelStartsAtThree() {
+        assertEquals("Lives: 3", hud.getLivesLabel().getText());
     }
+
 
     // Test that losing a life decreases the count by 1
     @Test
-    @DisplayName("Losing a life reduces count by 1")
-    void testLosingLifeReducesCount() {
-        int lives = 3;
-        lives = lives - 1;
-        assertEquals(2, lives);
+    @DisplayName("updateLives should update the label text")
+    void testUpdateLivesChangesLabel() {
+        hud.updateLives(2);
+        assertEquals("Lives: 2", hud.getLivesLabel().getText());
     }
 
-    // COINS TESTING
+    // lives shows 0 at game over
+    @Test
+    @DisplayName("Lives label should show 0 at game over")
+    void testUpdateLivesZero() {
+        hud.updateLives(0);
+        assertEquals("Lives: 0", hud.getLivesLabel().getText());
+    }
 
-    // Test that coins label initializes to 0
+    // HUD PANE TESTING
+
+    // check pane is stored correctly
+    @Test
+    @DisplayName("HUD pane should be the same pane passed in")
+    void testHudPaneIsStored() {
+        assertSame(testPane, hud.getHudPane());
+    }
+
+    // COMBINED TESTING
+
+    // check updating score does not affect lives
+    @Test
+    @DisplayName("Updating score should not change lives label")
+    void testScoreUpdateDoesNotAffectLives() {
+        hud.updateScore(999);
+        assertEquals("Lives: 3", hud.getLivesLabel().getText());
+    }
+
+    // check updating lives does not affect score
+    @Test
+    @DisplayName("Updating lives should not change score label")
+    void testLivesUpdateDoesNotAffectScore() {
+        hud.updateLives(1);
+        assertEquals("Score: 0", hud.getScoreLabel().getText());
+    }
+
+
+    // COINS TESTING (placeholder)
+
+    // Test that coins label initializes to 0 (placeholder)
     @Test
     @DisplayName("Coins label should start as Coins: 0")
     void testCoinsLabelInitialText() {
         assertEquals("Coins: 0", "Coins: " + 0);
     }
 
-    // Test that coins label updates correctly after collecting coins
+    // Test that coins label updates correctly after collecting coins (placeholder)
     @Test
     @DisplayName("Coins label format should update correctly")
     void testCoinsLabelFormat() {
@@ -122,7 +151,7 @@ class HUDManagerTest {
         assertEquals("Coins: 5", "Coins: " + coins);
     }
 
-    // Test to ensure coins never become negative
+    // Test to ensure coins never become negative (placeholder)
     @Test
     @DisplayName("Coins should never be negative")
     void testCoinsNeverNegative() {
@@ -130,7 +159,7 @@ class HUDManagerTest {
         assertTrue(coins >= 0);
     }
 
-    // Test that collecting a coin increases the count by 1
+    // Test that collecting a coin increases the count by 1 (placeholder)
     @Test
     @DisplayName("Collecting a coin increases count by 1")
     void testCollectingCoinIncreasesCount() {
@@ -139,7 +168,7 @@ class HUDManagerTest {
         assertEquals(1, coins);
     }
 
-    // Test that coins reset to zero on a new game
+    // Test that coins reset to zero on a new game (placeholder)
     @Test
     @DisplayName("Coins reset to 0 on new game")
     void testCoinsResetToZero() {
@@ -150,56 +179,56 @@ class HUDManagerTest {
 
     // MENU TESTING
 
-    // Test that the game title is correct
+    // check menuPane is created and not null
     @Test
-    @DisplayName("Game title should be Campus Craze")
-    void testGameTitleIsCampusCraze() {
-        String title = "Campus Craze";
-        assertEquals("Campus Craze", title);
+    @DisplayName("MenuScene pane should not be null after construction")
+    void testMenuPaneIsNotNull() {
+        Pane pane = new Pane();
+        MenuScene menu = new MenuScene(pane);
+        assertNotNull(menu.getMenuPane());
     }
 
-    // Test that the start button displays correct text
+    // check the pane passed in is stored correctly
     @Test
-    @DisplayName("Start button text should say START GAME")
-    void testStartButtonText() {
-        String buttonText = "START GAME";
-        assertNotNull(buttonText);
-        assertEquals("START GAME", buttonText);
+    @DisplayName("MenuScene should store the pane passed in constructor")
+    void testMenuPaneIsSameReference() {
+        Pane pane = new Pane();
+        MenuScene menu = new MenuScene(pane);
+        assertSame(pane, menu.getMenuPane());
     }
 
-    // Test that the menu is visible before starting the game
+
+
+    // Test that the start button works correct
     @Test
-    @DisplayName("Menu should be visible before game starts")
-    void testMenuVisibleBeforeStart() {
-        boolean menuVisible = true;
-        assertTrue(menuVisible);
+    @DisplayName("Start button should not be null after construction")
+    void testStartButtonIsNotNull() {
+        Pane pane = new Pane();
+        MenuScene menu = new MenuScene(pane);
+        assertNotNull(menu.getStartButton());
     }
+
+
+    // check menu is visible by default
+    @Test
+    @DisplayName("Menu pane should be visible by default")
+    void testMenuVisibleByDefault() {
+        Pane pane = new Pane();
+        MenuScene menu = new MenuScene(pane);
+        assertTrue(menu.getMenuPane().isVisible());
+    }
+
+
 
     // Test that the menu disappears after clicking start
     @Test
-    @DisplayName("Menu should disappear after start is clicked")
-    void testMenuDisappearsAfterStart() {
-        boolean menuVisible = true;
-        menuVisible = false;
-        assertFalse(menuVisible);
-    }
-
-    // Test that the game pane appears after starting the game
-    @Test
-    @DisplayName("Game pane should appear after start is clicked")
-    void testGamePaneAppearsAfterStart() {
-        boolean gamePaneVisible = false;
-        gamePaneVisible = true;
-        assertTrue(gamePaneVisible);
-    }
-
-    // Test that menu and game pane are never visible simultaneously
-    @Test
-    @DisplayName("Menu and game pane should never be visible at the same time")
-    void testMenuAndGamePaneNeverBothVisible() {
-        boolean menuVisible = false;
-        boolean gamePaneVisible = true;
-        assertFalse(menuVisible && gamePaneVisible);
+    @DisplayName("Menu should hide when start button is fired")
+    void testMenuHidesWhenStartFired() {
+        Pane pane = new Pane();
+        MenuScene menu = new MenuScene(pane);
+        menu.setStartButtonAction(() -> {});
+        menu.getStartButton().fire();
+        assertFalse(menu.getMenuPane().isVisible());
     }
 
     // START BUTTON TESTING
@@ -207,10 +236,12 @@ class HUDManagerTest {
     @Test
     @DisplayName("Start button should trigger startGame action")
     void testStartButtonTriggersStartGame() {
+        Pane pane = new Pane();
+        MenuScene menu = new MenuScene(pane);
         boolean[] gameStarted = {false};
-        Runnable startGame = () -> gameStarted[0] = true;
-        startGame.run();
-        assertTrue(gameStarted[0], "Start button should call startGame() when clicked");
+        menu.setStartButtonAction(() -> gameStarted[0] = true);
+        menu.getStartButton().fire();
+        assertTrue(gameStarted[0], "startGame should be called when button is fired");
     }
 
     // Game must not start if button is not clicked
