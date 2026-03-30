@@ -4,10 +4,13 @@ import javafx.scene.layout.Pane;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+
+
 
 /**
  * Handles the start menu screen
@@ -18,7 +21,7 @@ import javafx.scene.text.TextAlignment;
  *  Display background placeholder
  *  Add Start button
  *  Attach button event to call startGame()
- *  Hide menu when Start is clicked
+ *  Hides the menu when play button is  clicked
  */
 public class MenuScene {
 
@@ -28,8 +31,6 @@ public class MenuScene {
     private Label titleLabel;
     private Button startButton;
 
-    // Background placeholder rectangle (replaces image until asset is ready)
-    private Rectangle backgroundPlaceholder;
 
     // Screen dimensions
     private static final double SCREEN_WIDTH  = 1024;
@@ -44,81 +45,50 @@ public class MenuScene {
         this.startButton = new Button("Start");
     }
 
-    /**
-     * setupMenu()
-     * Positions all UI elements and adds them to the menuPane.
-     * Called once before the menu is shown.
-     */
     public void setupMenu() {
 
-        // BACKGROUND PLACEHOLDER
-        // A dark rectangle that fills the whole screen.
-        // Replace with: new ImageView(backgroundImage) when asset is ready.
-        backgroundPlaceholder = new Rectangle(SCREEN_WIDTH, SCREEN_HEIGHT);
-        backgroundPlaceholder.setFill(Color.web("#1a1a2e")); // dark navy
-        backgroundPlaceholder.setX(0);
-        backgroundPlaceholder.setY(0);
+        // load and display background image from resources
+        Image bgImage = new Image(getClass().getResourceAsStream("/Menu_assets/main_menu_background.jpg"));
+        ImageView bgView = new ImageView(bgImage);
+        bgView.setFitWidth(SCREEN_WIDTH);
+        bgView.setFitHeight(SCREEN_HEIGHT);
 
-        // TITLE LABEL
-        titleLabel.setText("Campus Craze");
-        titleLabel.setFont(Font.font("Arial Black", FontWeight.EXTRA_BOLD, 52));
-        titleLabel.setTextFill(Color.web("#f5c518")); // bold yellow
-        titleLabel.setTextAlignment(TextAlignment.CENTER);
 
-        // Position title in the centre top area of the screen
-        titleLabel.setLayoutX(SCREEN_WIDTH / 2 - 220);
-        titleLabel.setLayoutY(SCREEN_HEIGHT / 2 - 150);
+        // load play button image from resources
+        Image playImage = new Image(getClass().getResourceAsStream("/Menu_assets/play_button.png"));
+        ImageView playView = new ImageView(playImage);
+        playView.setFitWidth(200);
+        playView.setFitHeight(60);
+        playView.setLayoutX(SCREEN_WIDTH / 2 - 100);
+        playView.setLayoutY(SCREEN_HEIGHT / 2 - 30);
 
-        // SUBTITLE LABEL
-        Label subtitleLabel = new Label("Rush to class. Dodge everything. Survive.");
-        subtitleLabel.setFont(Font.font("Arial", FontWeight.NORMAL, 18));
-        subtitleLabel.setTextFill(Color.web("#cccccc"));
-        subtitleLabel.setLayoutX(SCREEN_WIDTH / 2 - 200);
-        subtitleLabel.setLayoutY(SCREEN_HEIGHT / 2 - 70);
-
-        // IMAGE PLACEHOLDER
-
-        // TODO: When background image asset is ready, replace
-        // backgroundPlaceholder with:
-        //
-        //   Image bgImage = new Image(getClass()
-        //   .getResourceAsStream("/Menu/menu_background.png"));
-        //   ImageView bgView = new ImageView(bgImage);
-        //   bgView.setFitWidth(SCREEN_WIDTH);
-        //   bgView.setFitHeight(SCREEN_HEIGHT);
-        //   menuPane.getChildren().add(0, bgView);
-
-        // START BUTTON
-        startButton.setText("START GAME");
-        startButton.setPrefWidth(200);
-        startButton.setPrefHeight(50);
-        startButton.setLayoutX(SCREEN_WIDTH / 2 - 100);
-        startButton.setLayoutY(SCREEN_HEIGHT / 2);
-        startButton.setStyle("-fx-background-color: #f5c518;" + "-fx-text-fill: #1a1a2e;" + "-fx-font-size: 18px;" + "-fx-font-weight: bold;" + "-fx-background-radius: 10;" + "-fx-cursor: hand;");
-
-        // Hover effect
-        startButton.setOnMouseEntered(e -> startButton.setStyle("-fx-background-color: #ffd700;" + "-fx-text-fill: #1a1a2e;" + "-fx-font-size: 18px;" + "-fx-font-weight: bold;" + "-fx-background-radius: 10;" + "-fx-cursor: hand;"));
-
-        startButton.setOnMouseExited(e -> startButton.setStyle("-fx-background-color: #f5c518;" + "-fx-text-fill: #1a1a2e;" + "-fx-font-size: 18px;" + "-fx-font-weight: bold;" + "-fx-background-radius: 10;" + "-fx-cursor: hand;"));
-
-        // Background must be added FIRST so it appears behind everything
-        menuPane.getChildren().addAll(backgroundPlaceholder, titleLabel, subtitleLabel, startButton);
-    }
-
-    /**
-     * setStartButtonAction()
-     * Binds the start button click to the given action (startGame()).
-     * Also hides the menu when clicked.
-     */
-    public void setStartButtonAction(Runnable action) {
-        startButton.setOnAction(e -> {
-            // Hide the menu pane when start is clicked
+        // when player clicks the play button, hide menu and start game
+        playView.setOnMouseClicked(e -> {
             menuPane.setVisible(false);
 
-            // Call startGame() from Main
+            if (startButton.getOnAction() != null) {
+                startButton.fire();
+            }
+        });
+
+        // button gets a little bit transparent when hovered
+        playView.setOnMouseEntered(e -> playView.setOpacity(0.8));
+        playView.setOnMouseExited(e -> playView.setOpacity(1.0));
+
+
+        // the background goes first so everything else appears on top
+        menuPane.getChildren().addAll(bgView, playView);
+    }
+
+    // connects the start button to the startGame action in Main
+    public void setStartButtonAction(Runnable action) {
+        startButton.setOnAction(e -> {
+            menuPane.setVisible(false);
             action.run();
         });
     }
+
+
 
     // Getters
 
