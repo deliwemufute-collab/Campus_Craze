@@ -1,54 +1,76 @@
 package org.example.game;
 
+import javafx.geometry.Bounds;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
-public class Obstacle {
+/**
+ * Represents an obstacle in the game.
+ * Extends GameObject and implements Collidable.
+ */
+public class Obstacle extends GameObject implements Collidable {
 
     private final ImageView sprite;
-    private double x;
-    private double y;
 
+    /**
+     * Constructor.
+     *
+     * @param spriteImage Image of the obstacle
+     * @param startX      initial X position
+     * @param startY      initial Y position
+     */
     public Obstacle(Image spriteImage, double startX, double startY) {
+        super(startX, startY, 80, 80); // using fixed width/height
         this.sprite = new ImageView(spriteImage);
-        this.x = startX;
-        this.y = startY;
-
-        sprite.setFitWidth(80);
-        sprite.setFitHeight(80);
+        sprite.setFitWidth(width);
+        sprite.setFitHeight(height);
         sprite.setPreserveRatio(true);
-
-        sprite.setX(x - 40);
+        sprite.setX(x - width / 2);
         sprite.setY(y);
     }
 
-    public ImageView getSprite() {
-        return sprite;
+    // -------------------------------
+    // GameObject / Collidable methods
+    // -------------------------------
+    @Override
+    public void update() {
+        updatePosition();
     }
 
-    public double getX() {
-        return x;
-    }
-
-    public void setX(double x) {
-        this.x = x;
-        sprite.setX(x - 40);
-    }
-
-    public double getY() {
-        return y;
-    }
-
-    public void setY(double y) {
-        this.y = y;
+    @Override
+    public void updatePosition() {
+        // Example: simple vertical scroll (called from GameScene)
+        sprite.setX(x - width / 2);
         sprite.setY(y);
     }
 
+    @Override
+    public Bounds getBounds() {
+        return sprite.getBoundsInParent();
+    }
+
+    @Override
+    public void onCollision(Collidable other) {
+        System.out.println("Obstacle collided with: " + other.getClass().getSimpleName());
+        // TODO: define collision behavior if needed
+    }
+
+    // -------------------------------
+    // Specific to Obstacle
+    // -------------------------------
     public void scrollDown(double speed) {
-        setY(y + speed);
+        y += speed;
+        updatePosition();
     }
 
     public boolean isOffscreen(double screenHeight) {
         return y > screenHeight;
+    }
+
+    // -------------------------------
+    // Getter for sprite
+    // -------------------------------
+    public ImageView getSprite() {
+        return sprite;
     }
 }

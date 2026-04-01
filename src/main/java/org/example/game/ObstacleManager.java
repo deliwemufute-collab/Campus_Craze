@@ -26,10 +26,24 @@ public class ObstacleManager {
         );
     }
 
-    public void spawnObstacle(double x, double y) {
-        Obstacle obstacle = new Obstacle(obstacleImage, x, y);
+    /**
+     * Stub for GameScene compilation.
+     * Paakhi... work your logic for spawning objects here.
+     *
+     * @param x initial X position
+     * @param y initial Y position
+     * @return a new dummy Obstacle so GameScene can compile
+     */
+    public Obstacle spawnObstacle(double x, double y) {
+        // Using our dummy obstacle image for now
+        Image dummyImage = new Image(getClass().getResourceAsStream("/Obstacles/obstacle_dummy.png"));
+
+        Obstacle obstacle = new Obstacle(dummyImage, x, y);
+
         obstacles.add(obstacle);
         gamePane.getChildren().add(obstacle.getSprite());
+
+        return obstacle; // return so GameScene can keep track
     }
 
     public void scrollObstacles(double screenHeight) {
