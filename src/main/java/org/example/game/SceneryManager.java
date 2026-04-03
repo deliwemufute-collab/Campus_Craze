@@ -87,25 +87,25 @@ public class SceneryManager {
     }
 
     /**
-     * Spawns a new SceneryTile at the top of the screen using the next
-     * available scenery variant (cycles through all 16).
-     * The new tile is added to the pane and tracked in the tiles list.
+     * Stub for GameScene compilation.
+     * Emmanuel... add the corresponding logic here.
      *
-     * @param startY the Y position to spawn the tile at (typically 0 or
-     *               just above 0 so it scrolls in smoothly)
+     * @param startY initial Y position for the tile
+     * @return a new dummy SceneryTile so GameScene can compile
      */
-    public void spawnTile(double startY) {
-        if (sceneryVariants == null || sceneryVariants.length == 0) {
-            System.err.println("SceneryManager: no scenery variants loaded.");
-            return;
-        }
+    public SceneryTile spawnTile(double startY) {
+        // Using our dummy tile for now
+        Image variant = (sceneryVariants != null && sceneryVariants.length > 0)
+                ? sceneryVariants[nextVariantIndex % sceneryVariants.length]
+                : new Image(getClass().getResourceAsStream("/Tiles/dummy_tile_start.png"));
 
-        Image variant = sceneryVariants[nextVariantIndex % sceneryVariants.length];
         nextVariantIndex++;
 
         SceneryTile tile = new SceneryTile(variant, 0, startY);
         tiles.add(tile);
         gamePane.getChildren().add(tile.getSprite());
+
+        return tile; // return so GameScene can store it in gameObjects
     }
 
     /**

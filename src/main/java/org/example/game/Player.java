@@ -1,109 +1,91 @@
 package org.example.game;
 
+import javafx.geometry.Bounds;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
-// This will represent the player in game
-public class Player {
+/**
+ * Represents the player character in the game.
+ * Inherits position/size from GameObject and implements Collidable.
+ */
+public class Player extends GameObject implements Collidable {
 
-    // Player sprite. Will create assets for testing
     private ImageView sprite;
-
-    // Player position attributes. To be updated during gameplay
-    private double x;
-    private double y;
-
-    // Player size. Let's use the images sizes with getImage().
-    // But we could play with this as a reaction to power ups??
-    private double width;
-    private double height;
 
     // Movement flags
     private boolean movingLeft = false;
     private boolean movingRight = false;
 
-    // Speed
+    // Speed in pixels per frame
     private double speed = 5;
 
     // Screen boundaries
     private double minX = 0;
-    private double maxX ;
+    private double maxX;
 
-    // Constructor
-    public Player(Image spriteImage, double startX, double startY,double screenWidth) {
+    /**
+     * Constructor.
+     *
+     * @param spriteImage Image for the player
+     * @param startX      initial X position
+     * @param startY      initial Y position
+     * @param screenWidth screen width for boundary clamping
+     */
+    public Player(Image spriteImage, double startX, double startY, double screenWidth) {
+        super(startX, startY, spriteImage.getWidth(), spriteImage.getHeight());
         this.sprite = new ImageView(spriteImage);
-        this.x = startX;
-        this.y = startY;
-        this.sprite.setX(x);
-        this.sprite.setY(y);
-
-        this.width = sprite.getImage().getWidth();
-        this.height = sprite.getImage().getHeight();
-        this.maxX =screenWidth;
+        this.sprite.setX(startX);
+        this.sprite.setY(startY);
+        this.maxX = screenWidth;
     }
 
-    // Getters and setters
+    // -------------------------------
+    // Movement controls
+    // -------------------------------
+    public void moveLeft() { movingLeft = true; }
+    public void moveRight() { movingRight = true; }
+    public void stopLeft() { movingLeft = false; }
+    public void stopRight() { movingRight = false; }
+
+    // -------------------------------
+    // Collidable / GameObject methods
+    // -------------------------------
+
+    @Override
+    public void update() {
+        // This is the abstract method from GameObject
+        updatePosition();
+    }
+
+    @Override
+    public void updatePosition() {
+        if (movingLeft) x -= speed;
+        if (movingRight) x += speed;
+
+        // Clamp to screen boundaries
+        if (x < minX) x = minX;
+        if (x > maxX - width) x = maxX - width;
+
+        sprite.setX(x);
+        sprite.setY(y);
+    }
+
+    @Override
+    public Bounds getBounds() {
+        return sprite.getBoundsInParent();
+    }
+
+    @Override
+    public void onCollision(Collidable other) {
+        // For now, just print collision debug
+        System.out.println("Player collided with: " + other.getClass().getSimpleName());
+        // TODO: reduce lives / bounce / stop movement if needed
+    }
+
+    // -------------------------------
+    // Getter for sprite
+    // -------------------------------
     public ImageView getSprite() {
         return sprite;
-    }
-    public double getX() {
-        return x;
-    }
-    public void setX(double x) {
-        this.x = x;
-        sprite.setX(x);
-    }
-    public double getY() {
-        return y;
-    }
-    public void setY(double y) {
-        this.y = y;
-        sprite.setY(y);
-    }
-    public double getWidth() {
-        return width;
-    }
-    public double getHeight() {
-        return height;
-    }
-
-    // Placeholder methods for movement
-    public void moveLeft() {
-        movingLeft = true;
-    }
-
-    public void moveRight() {
-        movingRight = true;
-
-    }
-    public void stopLeft() {
-        movingLeft = false;
-    }
-
-    public void stopRight() {
-        movingRight = false;
-    }
-
-    public void updatePosition() {
-        // Update sprite position on screen if needed. Handled by DELIWE MUFUTE
-        if (movingLeft) {
-            x -= speed;
-        }
-
-        if (movingRight) {
-            x += speed;
-        }
-
-        // Keep player inside screen
-        if (x < minX) {
-            x = minX;
-        }
-
-        if (x > maxX - width) {
-            x = maxX - width;
-        }
-
-        sprite.setX(x);
-        sprite.setY(y);
     }
 }
