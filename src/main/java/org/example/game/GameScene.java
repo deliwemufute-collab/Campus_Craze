@@ -5,63 +5,60 @@ import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.scene.layout.Pane;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Manages the gameplay screen.
- * Integrates SceneryManager for vertical background scrolling
- * and runs a dummy game loop to verify scrolling behaviour.
+ * Integrates SceneryManager for vertical background scrolling,
+ * runs the main game loop, and stores all GameObjects in a list.
  *
- * @author Miguel Cofre      — GameScene structure
- * @author Emmanuel Ayobanjo — SceneryManager integration & dummy loop test
- * @author  Victoria Adeosun — HUDManager & UI
+ * Milestone 2 Architecture: uses GameObject parent class
+ * and Collidable interface where applicable.
  */
 public class GameScene {
-
 
     // --- Constants ---
     private final double screenWidth;
     private final double screenHeight;
-    private static final double SCROLL_SPEED  = 3.0;   // pixels per frame
-    private static final int    TILE_COUNT    = 3;      // tiles needed to fill screen
+    private static final double SCROLL_SPEED = 3.0;   // pixels per frame
+    private static final int TILE_COUNT = 3;          // tiles needed to fill screen
 
     // --- Core pane ---
-    private Pane gamePane;
+    private final Pane gamePane;
 
     // --- Game objects ---
-    private Player player;           // Set by Deliwe Mufute
-    private ObstacleManager obstacleManager;    // Set by Paakhi Agrawala
-    private HUDManager hudManager; // Set by Victoria Adeosun
-
-    // --- Scenery (Emmanuel Ayobanjo) ---
+    private Player player;
+    private ObstacleManager obstacleManager;
     private SceneryManager sceneryManager;
+    private HUDManager hudManager;
+
+    // --- Centralized game object list ---
+    private final List<GameObject> gameObjects = new ArrayList<>();
 
     // --- Game loop ---
     private AnimationTimer gameLoop;
 
-    /**
-     * Constructor: wires up the pane and initialises placeholders.
-     * Resolution is recycled from Main (1024 x 768).
-     *
-     * @param pane   the JavaFX Pane this scene renders into
-     * @param width  screen width passed from Main
-     * @param height screen height passed from Main
-     */
+    // ===============================
+    // Constructor
+    // ===============================
     public GameScene(Pane pane, double width, double height) {
-        this.gamePane     = pane;
-        this.screenWidth  = width;
+        this.gamePane = pane;
+        this.screenWidth = width;
         this.screenHeight = height;
-
-        this.player    = null;            // To be set by Deliwe Mufute
     }
 
-    /**
-     * Initialises all game objects before the loop starts.
-     * Loads assets, sets up SceneryManager, and spawns initial tiles.
-     *
-     * Victoria Adeosun will expand this with HUD + additional object setup.
-     */
+    // ===============================
+    // Initialization
+    // ===============================
     public void initializeGameObjects() {
+        setupScenery();
+        setupPlayer();
+        setupObstacles();
+        setupHUD();
+    }
 
-        // --- Load scenery images directly from resources ---
+    private void setupScenery() {
         Image[] sceneryVariants = new Image[]{
                 new Image(getClass().getResourceAsStream("/Tiles/dummy_tile_start.png")),
                 new Image(getClass().getResourceAsStream("/Tiles/dummy_tile_mid_1.png")),
@@ -71,51 +68,49 @@ public class GameScene {
                 new Image(getClass().getResourceAsStream("/Tiles/dummy_tile_end.png"))
         };
 
-        // --- Set up SceneryManager ---
-        sceneryManager = new SceneryManager(
-                gamePane,
-                SCROLL_SPEED,
-                screenHeight,
-                screenWidth
-        );
+        sceneryManager = new SceneryManager(gamePane, SCROLL_SPEED, screenHeight, screenWidth);
         sceneryManager.setSceneryVariants(sceneryVariants);
 
-        // --- Spawn initial tiles to fill the screen top-to-bottom ---
-        // Tiles are stacked so there is no gap when scrolling starts.
-        // Tile height is read from the first loaded image.
         double tileHeight = sceneryVariants[0].getHeight();
         for (int i = 0; i < TILE_COUNT; i++) {
-            sceneryManager.spawnTile(i * tileHeight);
+            SceneryTile tile = sceneryManager.spawnTile(i * tileHeight);
+            gameObjects.add(tile);
         }
 
         System.out.println("GameScene: scenery tiles spawned.");
+    }
 
-        // --- Set up Player ---
+    private void setupPlayer() {
         Image playerImage = new Image(getClass().getResourceAsStream("/Player/player_dummy.png"));
         player = new Player(playerImage, screenWidth / 2, screenHeight - 150, screenWidth);
         gamePane.getChildren().add(player.getSprite());
+        gameObjects.add(player);
+    }
 
-        // --- Set up ObstacleManager (Paakhi Agrawala) ---
+    private void setupObstacles() {
         obstacleManager = new ObstacleManager(gamePane);
 
-// initial dummy obstacles
-        obstacleManager.spawnObstacle(380, 150);
-        obstacleManager.spawnObstacle(512, -100);
-        obstacleManager.spawnObstacle(640, -350);
+        // Initial dummy obstacles
+        Obstacle o1 = obstacleManager.spawnObstacle(380, 150);
+        Obstacle o2 = obstacleManager.spawnObstacle(512, -100);
+        Obstacle o3 = obstacleManager.spawnObstacle(640, -350);
+
+        // Add to GameObjects
+        gameObjects.add(o1);
+        gameObjects.add(o2);
+        gameObjects.add(o3);
 
         System.out.println("GameScene: dummy obstacles spawned.");
+    }
 
-        // set up HUD  by Victoria Adeosun
+    private void setupHUD() {
         hudManager = new HUDManager(gamePane);
         hudManager.setupHUD();
     }
 
-    /**
-     * Starts the JavaFX AnimationTimer game loop.
-     * Each frame: scrollTiles() is called on SceneryManager.
-     * Placeholders exist for player movement and collision once other
-     * members integrate their work.
-     */
+    // ===============================
+    // Game Loop
+    // ===============================
     public void startGameLoop() {
         gameLoop = new AnimationTimer() {
             @Override
@@ -124,12 +119,10 @@ public class GameScene {
             }
         };
         gameLoop.start();
-        System.out.println("GameScene: game loop started.");
+        System.out.println("GameScene: Game loop started.");
     }
 
-    //...KeyBoard input
     public void setupKeyboard(Scene scene) {
-
         scene.setOnKeyPressed(e -> {
             if (player == null) return;
 
@@ -149,22 +142,40 @@ public class GameScene {
         });
     }
 
-    /**
-     * Called every frame by the AnimationTimer.
-     * Delegates scrolling to SceneryManager; player/collision TBD.
-     */
+// ===============================
+// Update / Frame Handling
+// ===============================
     public void update() {
-        // Scroll the background scenery
-        sceneryManager.scrollTiles();
+        // -------------------------------
+        // Polymorphic update for all game objects
+        // -------------------------------
+        for (GameObject obj : gameObjects) {
+            obj.update(); // Each GameObject handles its own logic (movement, scrolling, etc.)
+        }
 
-        // Player movement
-        player.updatePosition();
+        // -------------------------------
+        // Collision detection
+        // -------------------------------
+        for (int i = 0; i < gameObjects.size(); i++) {
+            if (!(gameObjects.get(i) instanceof Collidable)) continue;
+            Collidable c1 = (Collidable) gameObjects.get(i);
 
-        // Scroll obstacles with scenery
-        obstacleManager.scrollObstacles(screenHeight);
+            for (int j = i + 1; j < gameObjects.size(); j++) {
+                if (!(gameObjects.get(j) instanceof Collidable)) continue;
+                Collidable c2 = (Collidable) gameObjects.get(j);
+
+                // Check bounding rectangles
+                if (c1.getBounds().intersects(c2.getBounds())) {
+                    c1.onCollision(c2);
+                    c2.onCollision(c1);
+                }
+            }
+        }
     }
 
-    // --- Getters ---
+    // ===============================
+    // Getters
+    // ===============================
     public Pane getGamePane() {
         return gamePane;
     }
@@ -175,5 +186,9 @@ public class GameScene {
 
     public SceneryManager getSceneryManager() {
         return sceneryManager;
+    }
+
+    public List<GameObject> getGameObjects() {
+        return gameObjects;
     }
 }
