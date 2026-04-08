@@ -53,6 +53,30 @@ public class SceneryTile extends GameObject {
     }
 
     /**
+     * Updates the X-coordinate of the SceneryTile and synchronizes
+     * the position of the associated sprite.
+     *
+     * @param x the new X-coordinate for the tile
+     */
+    @Override
+    public void setX(double x) {
+        this.x = x;
+        sprite.setX(x);
+    }
+
+    /**
+     * Updates the Y-coordinate of the SceneryTile and synchronizes
+     * the position of the associated sprite.
+     *
+     * @param y the new Y-coordinate for the tile
+     */
+    @Override
+    public void setY(double y) {
+        this.y = y;
+        sprite.setY(y);
+    }
+
+    /**
      * Syncs the ImageView position to the logical x/y.
      * Called by update() and by SceneryManager when recycling a tile.
      */

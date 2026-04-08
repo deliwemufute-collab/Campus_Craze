@@ -49,6 +49,12 @@ public class SceneryManager {
     // Tile width used when positioning spawned tiles
     private final double tileWidth;
 
+    // Current theme mid tiles for normal shuffling
+    private Image[] midVariants;
+
+    // Queued transition tiles (top of old theme, start of new theme)
+    private final java.util.Queue<Image> transitionQueue = new java.util.LinkedList<>();
+
     /**
      * Constructs a SceneryManager.
      *
@@ -84,17 +90,56 @@ public class SceneryManager {
     }
 
     /**
+     * Triggers a theme transition. The next two recycled tiles will show
+     * currentTop then nextStart, after which midVariants switches to nextMids.
+     *
+     * @param currentTop  the "top" tile of the outgoing theme
+     * @param nextStart   the "start" tile of the incoming theme
+     * @param nextMids    the mid tiles to shuffle after the transition
+     */
+    public void switchTheme(Image currentTop, Image nextStart, Image[] nextMids) {
+        transitionQueue.clear();
+        transitionQueue.add(currentTop);
+        transitionQueue.add(nextStart);
+        this.midVariants = nextMids;
+        this.sceneryVariants = nextMids; // fallback for existing recycle logic
+        this.nextVariantIndex = 0;
+    }
+
+    /**
      * Moves every tile in the list down by scrollSpeed and recycles any
      * that have gone fully offscreen.
      */
     private void scrollAndRecycle(List<SceneryTile> list) {
         for (SceneryTile tile : list) {
             tile.setY(tile.getY() + scrollSpeed);
+        }
 
+        for (SceneryTile tile : list) {
             if (tile.getY() >= screenHeight) {
-                recycleTile(tile);
+                // Exclude the tile being recycled from the search
+                double highestY = list.stream()
+                        .filter(t -> t != tile)
+                        .mapToDouble(SceneryTile::getY)
+                        .min()
+                        .orElse(0); // only one tile in list → place at top
+
+                tile.setY(highestY - tile.getHeight());
+                assignNextVariant(tile);
             }
         }
+    }
+
+    private void assignNextVariant(SceneryTile tile) {
+        if (!transitionQueue.isEmpty()) {
+            Image transition = transitionQueue.poll();
+            if (transition != null) tile.setImage(transition);
+            return;
+        }
+        if (sceneryVariants == null || sceneryVariants.length == 0) return;
+        Image variant = sceneryVariants[nextVariantIndex % sceneryVariants.length];
+        nextVariantIndex++;
+        if (variant != null) tile.setImage(variant);
     }
 
     // -----------------------------------------------------------------------
@@ -159,17 +204,7 @@ public class SceneryManager {
      */
     private void recycleTile(SceneryTile tile) {
         tile.setY(-tile.getHeight());
-
-        if (sceneryVariants == null || sceneryVariants.length == 0) {
-            return;
-        }
-
-        Image variant = sceneryVariants[nextVariantIndex % sceneryVariants.length];
-        nextVariantIndex++;
-
-        if (variant != null) {
-            tile.setImage(variant);
-        }
+        assignNextVariant(tile);
     }
 
     /**

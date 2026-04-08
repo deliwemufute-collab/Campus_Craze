@@ -8,21 +8,12 @@ import javafx.scene.layout.Pane;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Manages the gameplay screen.
- * Integrates SceneryManager for vertical background scrolling,
- * runs the main game loop, and stores all GameObjects in a list.
- *
- * Milestone 2 Architecture: uses GameObject parent class
- * and Collidable interface where applicable.
- */
 public class GameScene {
 
     // --- Constants ---
     private final double screenWidth;
     private final double screenHeight;
-    private static final double SCROLL_SPEED = 3.0;   // pixels per frame
-    private static final int TILE_COUNT = 3;          // tiles needed to fill screen
+    private static final double SCROLL_SPEED = 3.0;
 
     // --- Core pane ---
     private final Pane gamePane;
@@ -39,13 +30,31 @@ public class GameScene {
 
     // --- Game loop ---
     private AnimationTimer gameLoop;
+    private long lastScoreTime = 0;
+
+    // --- Theme assets ---
+    private Image[] dummyMids;
+    private Image dummyTop;
+    private Image cityStart;
+    private Image[] cityMids;
+    private Image cityTop;
+    private Image parkStart;
+    private Image[] parkMids;
+    private Image parkTop;
+    private Image subwayStart;
+    private Image[] subwayMids;
+
+    // --- Theme transition flags ---
+    private boolean switchedToCity   = false;
+    private boolean switchedToPark   = false;
+    private boolean switchedToSubway = false;
 
     // ===============================
     // Constructor
     // ===============================
     public GameScene(Pane pane, double width, double height) {
-        this.gamePane = pane;
-        this.screenWidth = width;
+        this.gamePane     = pane;
+        this.screenWidth  = width;
         this.screenHeight = height;
     }
 
@@ -60,20 +69,46 @@ public class GameScene {
     }
 
     private void setupScenery() {
-        Image[] sceneryVariants = new Image[]{
-                new Image(getClass().getResourceAsStream("/Tiles/dummy_tile_start.png")),
+        dummyMids = new Image[]{
                 new Image(getClass().getResourceAsStream("/Tiles/dummy_tile_mid_1.png")),
                 new Image(getClass().getResourceAsStream("/Tiles/dummy_tile_mid_2.png")),
                 new Image(getClass().getResourceAsStream("/Tiles/dummy_tile_mid_3.png")),
-                new Image(getClass().getResourceAsStream("/Tiles/dummy_tile_mid_4.png")),
-                new Image(getClass().getResourceAsStream("/Tiles/dummy_tile_end.png"))
+                new Image(getClass().getResourceAsStream("/Tiles/dummy_tile_mid_4.png"))
+        };
+        dummyTop = new Image(getClass().getResourceAsStream("/Tiles/dummy_tile_end.png"));
+
+        cityStart = new Image(getClass().getResourceAsStream("/Tiles/city_tile_start.jpg"));
+        cityMids  = new Image[]{
+                new Image(getClass().getResourceAsStream("/Tiles/city_tile_mid_1.jpg")),
+                new Image(getClass().getResourceAsStream("/Tiles/city_tile_mid_2.jpg")),
+                new Image(getClass().getResourceAsStream("/Tiles/city_tile_mid_3.jpg")),
+                new Image(getClass().getResourceAsStream("/Tiles/city_tile_mid_4.jpg"))
+        };
+        cityTop = new Image(getClass().getResourceAsStream("/Tiles/city_tile_top.jpg"));
+
+        parkStart = new Image(getClass().getResourceAsStream("/Tiles/park_tile_start.jpg"));
+        parkMids  = new Image[]{
+                new Image(getClass().getResourceAsStream("/Tiles/park_tile_mid_1.jpg")),
+                new Image(getClass().getResourceAsStream("/Tiles/park_tile_mid_2.jpg")),
+                new Image(getClass().getResourceAsStream("/Tiles/park_tile_mid_3.jpg")),
+                new Image(getClass().getResourceAsStream("/Tiles/park_tile_mid_4.jpg"))
+        };
+        parkTop = new Image(getClass().getResourceAsStream("/Tiles/park_tile_top.jpg"));
+
+        subwayStart = new Image(getClass().getResourceAsStream("/Tiles/subway_tile_start.jpg"));
+        subwayMids  = new Image[]{
+                new Image(getClass().getResourceAsStream("/Tiles/subway_tile_mid_1.jpg")),
+                new Image(getClass().getResourceAsStream("/Tiles/subway_tile_mid_2.jpg")),
+                new Image(getClass().getResourceAsStream("/Tiles/subway_tile_mid_3.jpg")),
+                new Image(getClass().getResourceAsStream("/Tiles/subway_tile_mid_4.jpg"))
         };
 
         sceneryManager = new SceneryManager(gamePane, SCROLL_SPEED, screenHeight, screenWidth);
-        sceneryManager.setSceneryVariants(sceneryVariants);
+        sceneryManager.setSceneryVariants(dummyMids);
 
-        double tileHeight = sceneryVariants[0].getHeight();
-        for (int i = 0; i < TILE_COUNT; i++) {
+        double tileHeight = dummyMids[0].getHeight();
+        int tilesNeeded = (int) Math.ceil(screenHeight / tileHeight) + 1;
+        for (int i = 0; i < tilesNeeded; i++) {
             SceneryTile tile = sceneryManager.spawnTile(i * tileHeight);
             gameObjects.add(tile);
         }
@@ -91,12 +126,10 @@ public class GameScene {
     private void setupObstacles() {
         obstacleManager = new ObstacleManager(gamePane);
 
-        // Initial dummy obstacles
         Obstacle o1 = obstacleManager.spawnObstacle(380, 150);
         Obstacle o2 = obstacleManager.spawnObstacle(512, -100);
         Obstacle o3 = obstacleManager.spawnObstacle(640, -350);
 
-        // Add to GameObjects
         gameObjects.add(o1);
         gameObjects.add(o2);
         gameObjects.add(o3);
@@ -105,10 +138,8 @@ public class GameScene {
     }
 
     private void setupHUD() {
-        hudManager = new HUDManager(gamePane);
+        hudManager   = new HUDManager(gamePane);
         hudManager.setupHUD();
-
-        // connected score manager to the HUD so it can update the labels
         scoreManager = new ScoreManager(hudManager);
     }
 
@@ -119,12 +150,13 @@ public class GameScene {
         gameLoop = new AnimationTimer() {
             @Override
             public void handle(long now) {
-                update();
-
-                // increase the score every second based on time survived
-                if (now % 60 == 0) {
+                // Increment score once per second (now is in nanoseconds)
+                if (lastScoreTime == 0) lastScoreTime = now;
+                if (now - lastScoreTime >= 1_000_000_000L) {
                     scoreManager.incrementScore();
+                    lastScoreTime = now;
                 }
+                update();
             }
         };
         gameLoop.start();
@@ -134,37 +166,49 @@ public class GameScene {
     public void setupKeyboard(Scene scene) {
         scene.setOnKeyPressed(e -> {
             if (player == null) return;
-
             switch (e.getCode()) {
-                case LEFT -> player.moveLeft();
+                case LEFT  -> player.moveLeft();
                 case RIGHT -> player.moveRight();
             }
         });
 
         scene.setOnKeyReleased(e -> {
             if (player == null) return;
-
             switch (e.getCode()) {
-                case LEFT -> player.stopLeft();
+                case LEFT  -> player.stopLeft();
                 case RIGHT -> player.stopRight();
             }
         });
     }
 
-// ===============================
-// Update / Frame Handling
-// ===============================
+    // ===============================
+    // Update / Frame Handling
+    // ===============================
     public void update() {
-        // -------------------------------
-        // Polymorphic update for all game objects
-        // -------------------------------
-        for (GameObject obj : gameObjects) {
-            obj.update(); // Each GameObject handles its own logic (movement, scrolling, etc.)
+        // --- Theme transition checks ---
+        int score = scoreManager.getScore();
+
+        if (!switchedToCity && score >= 100) {
+            switchedToCity = true;
+            sceneryManager.switchTheme(dummyTop, cityStart, cityMids);
+        } else if (!switchedToPark && score >= 200) {
+            switchedToPark = true;
+            sceneryManager.switchTheme(cityTop, parkStart, parkMids);
+        } else if (!switchedToSubway && score >= 300) {
+            switchedToSubway = true;
+            sceneryManager.switchTheme(parkTop, subwayStart, subwayMids);
         }
 
-        // -------------------------------
-        // Collision detection
-        // -------------------------------
+        // Scroll and recycle scenery
+        sceneryManager.update();
+
+        // Polymorphic update for non-scenery objects only
+        for (GameObject obj : gameObjects) {
+            if (obj instanceof SceneryTile) continue;
+            obj.update();
+        }
+
+        // --- Collision detection ---
         for (int i = 0; i < gameObjects.size(); i++) {
             if (!(gameObjects.get(i) instanceof Collidable)) continue;
             Collidable c1 = (Collidable) gameObjects.get(i);
@@ -173,12 +217,12 @@ public class GameScene {
                 if (!(gameObjects.get(j) instanceof Collidable)) continue;
                 Collidable c2 = (Collidable) gameObjects.get(j);
 
-                // Check bounding rectangles
                 if (c1.getBounds().intersects(c2.getBounds())) {
                     c1.onCollision(c2);
                     c2.onCollision(c1);
-                    // if player hits an obstacle it loses a life
-                    if ((gameObjects.get(i) instanceof Player && gameObjects.get(j) instanceof Obstacle) ||(gameObjects.get(j) instanceof Player && gameObjects.get(i) instanceof Obstacle)) {
+
+                    if ((gameObjects.get(i) instanceof Player && gameObjects.get(j) instanceof Obstacle)
+                            || (gameObjects.get(j) instanceof Player && gameObjects.get(i) instanceof Obstacle)) {
                         scoreManager.loseLife();
                     }
                 }
@@ -189,19 +233,20 @@ public class GameScene {
     // ===============================
     // Getters
     // ===============================
-    public Pane getGamePane() {
-        return gamePane;
+    public Pane getGamePane()               { return gamePane; }
+    public Player getPlayer()               { return player; }
+    public SceneryManager getSceneryManager() { return sceneryManager; }
+    public List<GameObject> getGameObjects() { return gameObjects; }
+
+    // ===============================
+    // Setters
+    // ===============================
+    // Used by tests to inject a dummy ScoreManager and SceneryManager
+    void setScoreManager(ScoreManager scoreManager) {
+        this.scoreManager = scoreManager;
     }
 
-    public Player getPlayer() {
-        return player;
-    }
-
-    public SceneryManager getSceneryManager() {
-        return sceneryManager;
-    }
-
-    public List<GameObject> getGameObjects() {
-        return gameObjects;
+    void setSceneryManager(SceneryManager sceneryManager) {
+        this.sceneryManager = sceneryManager;
     }
 }

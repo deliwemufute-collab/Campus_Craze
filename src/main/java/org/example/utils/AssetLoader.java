@@ -85,7 +85,7 @@ public class AssetLoader {
         }
 
         for (int i = 0; i < THEME_TILE_SUFFIXES.length; i++) {
-            String path = "/Tiles/" + theme + "_tile_" + THEME_TILE_SUFFIXES[i] + ".png";
+            String path = "/Tiles/" + theme + "_tile_" + THEME_TILE_SUFFIXES[i] + ".jpg";
             sceneryVariants[i] = loadImage(path, i > 0 ? sceneryVariants[0] : null);
         }
     }
