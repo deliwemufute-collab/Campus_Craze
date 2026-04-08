@@ -39,6 +39,8 @@ public class GameScene {
 
     // --- Game loop ---
     private AnimationTimer gameLoop;
+    private long lastScoreUpdate = 0;
+
 
     // ===============================
     // Constructor
@@ -110,6 +112,9 @@ public class GameScene {
 
         // connected score manager to the HUD so it can update the labels
         scoreManager = new ScoreManager(hudManager);
+        
+        // give the player a reference to score manager so it can lose lives on collision
+        player.setScoreManager(scoreManager);
     }
 
     // ===============================
@@ -122,8 +127,9 @@ public class GameScene {
                 update();
 
                 // increase the score every second based on time survived
-                if (now % 60 == 0) {
+                if (now - lastScoreUpdate >= 1_000_000_000) {
                     scoreManager.incrementScore();
+                    lastScoreUpdate = now;
                 }
             }
         };
@@ -177,10 +183,7 @@ public class GameScene {
                 if (c1.getBounds().intersects(c2.getBounds())) {
                     c1.onCollision(c2);
                     c2.onCollision(c1);
-                    // if player hits an obstacle it loses a life
-                    if ((gameObjects.get(i) instanceof Player && gameObjects.get(j) instanceof Obstacle) ||(gameObjects.get(j) instanceof Player && gameObjects.get(i) instanceof Obstacle)) {
-                        scoreManager.loseLife();
-                    }
+
                 }
             }
         }
