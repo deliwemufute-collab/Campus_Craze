@@ -7,132 +7,210 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Manages a list of SceneryTile objects to produce a continuous
- * vertical scrolling background effect.
+ * Manages background and overlay SceneryTile objects to produce a continuous
+ * vertical scrolling effect.
  *
- * Responsibilities:
- *  - Maintains the active tile list
- *  - Scrolls all tiles downward each frame via scrollTiles()
- *  - Spawns new tiles at the top via spawnTile()
+ * Milestone 2 changes:
+ *  - Added update() as the single per-frame entry point (replaces direct
+ *    scrollTiles() calls from GameScene); handles scroll + recycle for both
+ *    background tiles and overlay tiles in one call.
+ *  - Added overlay tile support: spawnOverlayTile(), getOverlayTiles().
+ *    Overlay tiles scroll at the same speed and recycle identically to
+ *    background tiles but are kept in a separate list so GameScene can
+ *    layer them correctly (overlays render on top of background).
+ *  - scrollTiles() is retained for backward-compatibility with existing tests.
+ *  - recycleTile() now guards against a null sceneryVariants array.
  *
  * @author Emmanuel Ayobanjo
  */
 public class SceneryManager {
 
-    // Active tiles currently on screen (or just off the top/bottom)
-    private List<SceneryTile> tiles;
+    // Background tiles
+    private final List<SceneryTile> tiles;
 
-    // The pane that tiles are added to / removed from
-    private Pane gamePane;
+    // Overlay tiles (side buildings, decorations drawn on top of road)
+    private final List<SceneryTile> overlayTiles;
 
-    // Pixels per frame that tiles move downward
+    // The pane that tiles are attached to
+    private final Pane gamePane;
+
+    // Pixels per frame all tiles scroll downward
     private double scrollSpeed;
 
-    // All 16 preloaded scenery images (loaded once, reused forever)
+    // Preloaded background scenery images
     private Image[] sceneryVariants;
 
-    // Tracks which variant to use next when spawning
+    // Round-robin index for picking the next variant on spawn / recycle
     private int nextVariantIndex;
 
-    // Screen height — tiles below this are considered offscreen
-    private double screenHeight;
+    // Screen height — tiles at or below this Y are recycled
+    private final double screenHeight;
 
-    // Tile width, used for positioning spawned tiles
-    private double tileWidth;
+    // Tile width used when positioning spawned tiles
+    private final double tileWidth;
 
     /**
      * Constructs a SceneryManager.
      *
-     * @param gamePane      the pane to attach tiles to
-     * @param scrollSpeed   how many pixels per frame tiles scroll down
-     * @param screenHeight  height of the game screen (for offscreen detection)
-     * @param tileWidth     width each tile should occupy
+     * @param gamePane     the pane to attach tiles to
+     * @param scrollSpeed  pixels per frame tiles scroll downward
+     * @param screenHeight height of the game screen (offscreen threshold)
+     * @param tileWidth    width each background tile should occupy
      */
     public SceneryManager(Pane gamePane, double scrollSpeed,
                           double screenHeight, double tileWidth) {
-        this.gamePane   = gamePane;
-        this.scrollSpeed = scrollSpeed;
+        this.gamePane     = gamePane;
+        this.scrollSpeed  = scrollSpeed;
         this.screenHeight = screenHeight;
-        this.tileWidth  = tileWidth;
-        this.tiles      = new ArrayList<>();
+        this.tileWidth    = tileWidth;
+        this.tiles        = new ArrayList<>();
+        this.overlayTiles = new ArrayList<>();
         this.nextVariantIndex = 0;
     }
 
+    // -----------------------------------------------------------------------
+    // Per-frame entry point
+    // -----------------------------------------------------------------------
+
     /**
-     * Stores the 16 preloaded scenery images.
-     * Must be called before spawnTile() is used.
+     * Main per-frame method. Scrolls and recycles all background tiles,
+     * then scrolls and recycles all overlay tiles.
      *
-     * @param variants array of exactly 16 preloaded Image objects
+     * Call this once per game loop frame from GameScene.
      */
-    public void setSceneryVariants(Image[] variants) {
-        this.sceneryVariants = variants;
+    public void update() {
+        scrollAndRecycle(tiles);
+        scrollAndRecycle(overlayTiles);
     }
 
     /**
-     * Scrolls all active tiles downward by scrollSpeed pixels each frame.
-     * Tiles that move fully offscreen (below screenHeight) are recycled
-     * back to the top via recycleTile().
-     *
-     * Called once per game loop frame.
+     * Moves every tile in the list down by scrollSpeed and recycles any
+     * that have gone fully offscreen.
      */
-    public void scrollTiles() {
-        for (SceneryTile tile : tiles) {
+    private void scrollAndRecycle(List<SceneryTile> list) {
+        for (SceneryTile tile : list) {
             tile.setY(tile.getY() + scrollSpeed);
 
-            // If the tile has gone entirely below the screen, recycle it
             if (tile.getY() >= screenHeight) {
                 recycleTile(tile);
             }
         }
     }
 
+    // -----------------------------------------------------------------------
+    // Backward-compatible scroll method (used by Milestone 1 tests)
+    // -----------------------------------------------------------------------
+
     /**
-     * Stub for GameScene compilation.
-     * Emmanuel... add the corresponding logic here.
+     * Scrolls all background tiles and recycles offscreen ones.
+     * Kept for backward compatibility with existing Milestone 1 tests.
+     * Prefer update() in production code.
+     */
+    public void scrollTiles() {
+        scrollAndRecycle(tiles);
+    }
+
+    // -----------------------------------------------------------------------
+    // Spawning
+    // -----------------------------------------------------------------------
+
+    /**
+     * Spawns a new background tile at the given Y position.
+     * The tile image is chosen from sceneryVariants in round-robin order.
+     * Falls back to a dummy tile if no variants are loaded.
      *
      * @param startY initial Y position for the tile
-     * @return a new dummy SceneryTile so GameScene can compile
+     * @return the spawned SceneryTile (added to gameObjects list by GameScene)
      */
     public SceneryTile spawnTile(double startY) {
-        // Using our dummy tile for now
-        Image variant = (sceneryVariants != null && sceneryVariants.length > 0)
-                ? sceneryVariants[nextVariantIndex % sceneryVariants.length]
-                : new Image(getClass().getResourceAsStream("/Tiles/dummy_tile_start.png"));
-
-        nextVariantIndex++;
-
-        SceneryTile tile = new SceneryTile(variant, 0, startY);
+        Image variant = pickNextVariant();
+        SceneryTile tile = new SceneryTile(variant, 0, startY, scrollSpeed);
         tiles.add(tile);
         gamePane.getChildren().add(tile.getSprite());
-
-        return tile; // return so GameScene can store it in gameObjects
+        return tile;
     }
 
     /**
-     * Recycles an offscreen tile by moving it back to the top of the screen
-     * and assigning it the next scenery variant.
-     * This avoids creating and destroying objects every frame.
+     * Spawns a new overlay tile at the given position using the provided image.
+     * Overlay tiles scroll at the same speed as background tiles and recycle
+     * when they go offscreen. Their images are fixed (not round-robin) because
+     * overlays represent specific side assets (e.g. a left-side building strip).
      *
-     * @param tile the tile to recycle
+     * @param image  the overlay image to display
+     * @param startX initial X position (typically 0 for left, screenWidth - w for right)
+     * @param startY initial Y position
+     * @return the spawned SceneryTile
+     */
+    public SceneryTile spawnOverlayTile(Image image, double startX, double startY) {
+        SceneryTile tile = new SceneryTile(image, startX, startY, scrollSpeed);
+        overlayTiles.add(tile);
+        gamePane.getChildren().add(tile.getSprite());
+        return tile;
+    }
+
+    // -----------------------------------------------------------------------
+    // Internal helpers
+    // -----------------------------------------------------------------------
+
+    /**
+     * Recycles a tile back above the screen and assigns the next background
+     * variant. If sceneryVariants is null or empty, the tile image is left
+     * unchanged (safe no-op).
      */
     private void recycleTile(SceneryTile tile) {
-        // Move tile back above the screen
         tile.setY(-tile.getHeight());
 
-        // Assign next variant so the scenery keeps changing
+        if (sceneryVariants == null || sceneryVariants.length == 0) {
+            return;
+        }
+
         Image variant = sceneryVariants[nextVariantIndex % sceneryVariants.length];
         nextVariantIndex++;
 
-        // Only set image if it's not null
         if (variant != null) {
             tile.setImage(variant);
         }
     }
 
+    /**
+     * Returns the next variant image in round-robin order.
+     * Falls back to a dummy asset if no variants are set.
+     */
+    private Image pickNextVariant() {
+        if (sceneryVariants != null && sceneryVariants.length > 0) {
+            Image v = sceneryVariants[nextVariantIndex % sceneryVariants.length];
+            nextVariantIndex++;
+            return v;
+        }
+        // Fallback so spawnTile() never crashes when variants are not yet loaded
+        return new Image(getClass().getResourceAsStream("/Tiles/dummy_tile_start.png"));
+    }
 
-    // Getters
+    // -----------------------------------------------------------------------
+    // Variants / theme
+    // -----------------------------------------------------------------------
+
+    /**
+     * Sets the pool of background images used when spawning and recycling tiles.
+     * Call this to switch themes; the next recycle will pick from the new set.
+     *
+     * @param variants array of preloaded Image objects (any length); may be null
+     */
+    public void setSceneryVariants(Image[] variants) {
+        this.sceneryVariants = variants;
+        this.nextVariantIndex = 0;
+    }
+
+    // -----------------------------------------------------------------------
+    // Getters / setters
+    // -----------------------------------------------------------------------
+
     public List<SceneryTile> getTiles() {
         return tiles;
+    }
+
+    public List<SceneryTile> getOverlayTiles() {
+        return overlayTiles;
     }
 
     public double getScrollSpeed() {
