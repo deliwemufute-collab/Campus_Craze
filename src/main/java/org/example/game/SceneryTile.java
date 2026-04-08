@@ -5,36 +5,57 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
 /**
- * Represents a single scenery tile in the scrolling background.
- * Extends GameObject and implements Collidable for Milestone 2 architecture.
+ * Represents a single background scenery tile in the scrolling road.
+ *
+ * Milestone 2 changes:
+ *  - Removed Collidable implementation; background tiles are pure scenery
+ *    and must not participate in gameplay collision detection.
+ *  - Added scrollSpeed field so each tile moves itself inside update(),
+ *    fitting the polymorphic GameObject game-loop pattern in GameScene.
+ *
+ * @author Emmanuel Ayobanjo
  */
-public class SceneryTile extends GameObject implements Collidable {
+public class SceneryTile extends GameObject {
 
     private final ImageView sprite;
 
+    // Pixels per frame this tile scrolls downward
+    private double scrollSpeed;
+
     /**
-     * Creates a SceneryTile at the given position using the provided image.
+     * Creates a SceneryTile at the given position.
      *
      * @param spriteImage the tile image (one of preloaded variants)
      * @param startX      initial X position
      * @param startY      initial Y position
+     * @param scrollSpeed pixels per frame the tile moves downward
      */
-    public SceneryTile(Image spriteImage, double startX, double startY) {
+    public SceneryTile(Image spriteImage, double startX, double startY, double scrollSpeed) {
         super(startX, startY, spriteImage.getWidth(), spriteImage.getHeight());
+        this.scrollSpeed = scrollSpeed;
         this.sprite = new ImageView(spriteImage);
         this.sprite.setX(x);
         this.sprite.setY(y);
     }
 
-    // -------------------------------
-    // GameObject / Collidable Methods
-    // -------------------------------
+    // -----------------------------------------------------------------------
+    // GameObject contract
+    // -----------------------------------------------------------------------
+
+    /**
+     * Moves the tile downward by scrollSpeed each frame, then syncs the sprite.
+     * Called once per game loop frame by GameScene's polymorphic update loop.
+     */
     @Override
     public void update() {
+        y += scrollSpeed;
         updatePosition();
     }
 
-    @Override
+    /**
+     * Syncs the ImageView position to the logical x/y.
+     * Called by update() and by SceneryManager when recycling a tile.
+     */
     public void updatePosition() {
         sprite.setX(x);
         sprite.setY(y);
@@ -45,31 +66,47 @@ public class SceneryTile extends GameObject implements Collidable {
         return sprite.getBoundsInParent();
     }
 
-    @Override
-    public void onCollision(Collidable other) {
-        // Scenery tiles usually do not handle collisions
-        // But included to satisfy Collidable interface
-        // Now... in this milestone you will add the buildings
-        // tiles on the sides. I think the best way to do that is
-        // by extending from this class and then implementing
-        // and onCollision on that child class.... up to you
-    }
-
-    // -------------------------------
+    // -----------------------------------------------------------------------
     // Tile-specific methods
-    // -------------------------------
+    // -----------------------------------------------------------------------
 
+    /**
+     * Swaps the tile's image and updates width/height to match.
+     * Used by SceneryManager when recycling a tile with a new variant.
+     *
+     * @param newImage the replacement image; if null the sprite is cleared
+     *                 and height falls back to the default 192px
+     */
     public void setImage(Image newImage) {
         sprite.setImage(newImage);
-        this.width = newImage.getWidth();
-        this.height = newImage.getHeight();
+        if (newImage != null) {
+            this.width  = newImage.getWidth();
+            this.height = newImage.getHeight();
+        }
     }
 
+    /**
+     * Returns the height of the current image, or 192 if none is loaded.
+     * Used by SceneryManager to calculate recycle position.
+     */
+    @Override
     public double getHeight() {
         return sprite.getImage() != null ? sprite.getImage().getHeight() : 192;
     }
 
     public ImageView getSprite() {
         return sprite;
+    }
+
+    // -----------------------------------------------------------------------
+    // Scroll speed
+    // -----------------------------------------------------------------------
+
+    public double getScrollSpeed() {
+        return scrollSpeed;
+    }
+
+    public void setScrollSpeed(double scrollSpeed) {
+        this.scrollSpeed = scrollSpeed;
     }
 }
