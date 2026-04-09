@@ -23,6 +23,9 @@ public class Player extends GameObject implements Collidable {
     private double minX = 0;
     private double maxX;
 
+    // score manager reference to update lives on collision
+    private ScoreManager scoreManager;
+
     /**
      * Constructor.
      *
@@ -80,6 +83,11 @@ public class Player extends GameObject implements Collidable {
         // For now, just print collision debug
         System.out.println("Player collided with: " + other.getClass().getSimpleName());
         // TODO: reduce lives / bounce / stop movement if needed
+
+        // if player hits an obstacle lose a life
+        if (other instanceof Obstacle && scoreManager != null) {
+            scoreManager.loseLife();
+        }
     }
 
     // -------------------------------
@@ -87,5 +95,10 @@ public class Player extends GameObject implements Collidable {
     // -------------------------------
     public ImageView getSprite() {
         return sprite;
+    }
+
+    // it lets GameScene pass in the score manager
+    public void setScoreManager(ScoreManager scoreManager) {
+        this.scoreManager = scoreManager;
     }
 }

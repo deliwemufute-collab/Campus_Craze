@@ -32,12 +32,15 @@ public class GameScene {
     private ObstacleManager obstacleManager;
     private SceneryManager sceneryManager;
     private HUDManager hudManager;
+    private ScoreManager scoreManager;
 
     // --- Centralized game object list ---
     private final List<GameObject> gameObjects = new ArrayList<>();
 
     // --- Game loop ---
     private AnimationTimer gameLoop;
+    private long lastScoreUpdate = 0;
+
 
     // ===============================
     // Constructor
@@ -106,6 +109,12 @@ public class GameScene {
     private void setupHUD() {
         hudManager = new HUDManager(gamePane);
         hudManager.setupHUD();
+
+        // connected score manager to the HUD so it can update the labels
+        scoreManager = new ScoreManager(hudManager);
+        
+        // give the player a reference to score manager so it can lose lives on collision
+        player.setScoreManager(scoreManager);
     }
 
     // ===============================
@@ -116,6 +125,12 @@ public class GameScene {
             @Override
             public void handle(long now) {
                 update();
+
+                // increase the score every second based on time survived
+                if (now - lastScoreUpdate >= 1_000_000_000) {
+                    scoreManager.incrementScore();
+                    lastScoreUpdate = now;
+                }
             }
         };
         gameLoop.start();
@@ -168,6 +183,7 @@ public class GameScene {
                 if (c1.getBounds().intersects(c2.getBounds())) {
                     c1.onCollision(c2);
                     c2.onCollision(c1);
+
                 }
             }
         }
