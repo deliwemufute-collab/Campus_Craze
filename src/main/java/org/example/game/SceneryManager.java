@@ -4,6 +4,8 @@ import javafx.scene.image.Image;
 import javafx.scene.layout.Pane;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -137,8 +139,17 @@ public class SceneryManager {
             return;
         }
         if (sceneryVariants == null || sceneryVariants.length == 0) return;
-        Image variant = sceneryVariants[nextVariantIndex % sceneryVariants.length];
-        nextVariantIndex++;
+
+        // Re-shuffle the pool each time we wrap around so the order is
+        // different every cycle (avoids the same mid sequence repeating)
+        if (nextVariantIndex >= sceneryVariants.length) {
+            List<Image> reshuffled = new ArrayList<>(Arrays.asList(sceneryVariants));
+            Collections.shuffle(reshuffled);
+            sceneryVariants = reshuffled.toArray(new Image[0]);
+            nextVariantIndex = 0;
+        }
+
+        Image variant = sceneryVariants[nextVariantIndex++];
         if (variant != null) tile.setImage(variant);
     }
 
@@ -158,6 +169,24 @@ public class SceneryManager {
     // -----------------------------------------------------------------------
     // Spawning
     // -----------------------------------------------------------------------
+
+    /**
+     * Spawns a background tile at the given Y position using an explicit image
+     * rather than the round-robin variant pool.
+     *
+     * Used by GameScene to place the theme's start tile (e.g. cityStart) as
+     * tile[0] before the shuffled mids fill the rest of the screen.
+     *
+     * @param image  the exact image to display on this tile
+     * @param startY initial Y position for the tile
+     * @return the spawned SceneryTile
+     */
+    public SceneryTile spawnTileWithImage(Image image, double startY) {
+        SceneryTile tile = new SceneryTile(image, 0, startY, scrollSpeed);
+        tiles.add(tile);
+        gamePane.getChildren().add(tile.getSprite());
+        return tile;
+    }
 
     /**
      * Spawns a new background tile at the given Y position.
@@ -227,12 +256,26 @@ public class SceneryManager {
 
     /**
      * Sets the pool of background images used when spawning and recycling tiles.
-     * Call this to switch themes; the next recycle will pick from the new set.
+     * The array is **shuffled** so mid tiles appear in a random order each time
+     * through the pool. Call this to switch themes; the next recycle picks from
+     * the new shuffled set.
+     *
+     * Tests pass dummy arrays directly — the shuffle has no effect on test
+     * correctness because tests only check Y positions and list sizes, not
+     * which specific image is on a tile.
      *
      * @param variants array of preloaded Image objects (any length); may be null
      */
     public void setSceneryVariants(Image[] variants) {
-        this.sceneryVariants = variants;
+        if (variants != null && variants.length > 1) {
+            // Shuffle a copy so the original array order (start/end sentinel)
+            // in GameScene is not mutated — only the internal pool is randomised
+            List<Image> shuffled = new ArrayList<>(Arrays.asList(variants));
+            Collections.shuffle(shuffled);
+            this.sceneryVariants = shuffled.toArray(new Image[0]);
+        } else {
+            this.sceneryVariants = variants;
+        }
         this.nextVariantIndex = 0;
     }
 

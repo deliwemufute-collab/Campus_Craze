@@ -40,7 +40,7 @@ class HUDManagerTest {
         assertNotNull(hud.getScoreLabel());
     }
 
-    // Test to verify that the lives label initializes correctly
+    // score label shows Score: 0 at start
     @Test
     @DisplayName("Score label should show Score: 0 at start")
     void testScoreLabelStartsAtZero() {
@@ -70,6 +70,13 @@ class HUDManagerTest {
         hud.updateScore(500);
         hud.updateScore(0);
         assertEquals("Score: 0", hud.getScoreLabel().getText());
+    }
+    // testing if large score values display correctly
+    @Test
+    @DisplayName("Score label should handle large values correctly")
+    void testScoreLargeValue() {
+        hud.updateScore(99999);
+        assertEquals("Score: 99999", hud.getScoreLabel().getText());
     }
 
 
@@ -106,6 +113,24 @@ class HUDManagerTest {
         assertEquals("Lives: 0", hud.getLivesLabel().getText());
     }
 
+    //  lives decrease correctly on collision
+    @Test
+    @DisplayName("Lives should decrease by 1 when player loses a life")
+    void testLivesDecrementOnCollision() {
+        hud.updateLives(3);
+        hud.updateLives(2);
+        assertEquals("Lives: 2", hud.getLivesLabel().getText());
+    }
+
+    // if the game is over state when lives reach 0
+    @Test
+    @DisplayName("Lives should reach 0 at game over")
+    void testLivesReachZeroAtGameOver() {
+        hud.updateLives(1);
+        hud.updateLives(0);
+        assertEquals("Lives: 0", hud.getLivesLabel().getText());
+    }
+
     // HUD PANE TESTING
 
     // check pane is stored correctly
@@ -133,48 +158,82 @@ class HUDManagerTest {
         assertEquals("Score: 0", hud.getScoreLabel().getText());
     }
 
-
-    // COINS TESTING (placeholder)
-
-    // Test that coins label initializes to 0 (placeholder)
+    // check if all three labels update independently
     @Test
-    @DisplayName("Coins label should start as Coins: 0")
-    void testCoinsLabelInitialText() {
-        assertEquals("Coins: 0", "Coins: " + 0);
+    @DisplayName("All HUD labels should update independently")
+    void testAllHUDLabelsUpdateIndependently() {
+        hud.updateScore(100);
+        hud.updateLives(2);
+        hud.updateCoins(5);
+        assertAll(() -> assertEquals("Score: 100", hud.getScoreLabel().getText()), () -> assertEquals("Lives: 2", hud.getLivesLabel().getText()), () -> assertEquals("Coins: 5", hud.getCoinsLabel().getText()));
     }
 
-    // Test that coins label updates correctly after collecting coins (placeholder)
+    // checking if the HUDManager always starts with defaults
     @Test
-    @DisplayName("Coins label format should update correctly")
-    void testCoinsLabelFormat() {
-        int coins = 5;
-        assertEquals("Coins: 5", "Coins: " + coins);
+    @DisplayName("HUDManager should always start with default values")
+    void testNewHUDManagerStartsWithDefaults() {
+        HUDManager freshHud = new HUDManager(new Pane());
+        assertAll(() -> assertEquals("Score: 0", freshHud.getScoreLabel().getText()), () -> assertEquals("Lives: 3", freshHud.getLivesLabel().getText()), () -> assertEquals("Coins: 0", freshHud.getCoinsLabel().getText()));
     }
 
-    // Test to ensure coins never become negative (placeholder)
+
+    // COINS TESTING
+
+    // Test that coins is created and not null
     @Test
-    @DisplayName("Coins should never be negative")
-    void testCoinsNeverNegative() {
-        int coins = 0;
-        assertTrue(coins >= 0);
+    @DisplayName("Coins label should not be null after construction")
+    void testCoinsLabelIsNotNull() {
+        assertNotNull(hud.getCoinsLabel());
     }
 
-    // Test that collecting a coin increases the count by 1 (placeholder)
+    // check that the coins label starts at 0
     @Test
-    @DisplayName("Collecting a coin increases count by 1")
-    void testCollectingCoinIncreasesCount() {
-        int coins = 0;
-        coins = coins + 1;
-        assertEquals(1, coins);
+    @DisplayName("Coins label should show Coins: 0 at the start")
+    void testCoinsLabelStartsAtZero() {
+        assertEquals("Coins: 0", hud.getCoinsLabel().getText());
     }
 
-    // Test that coins reset to zero on a new game (placeholder)
+    // updateCoins actually changes the label
     @Test
-    @DisplayName("Coins reset to 0 on new game")
-    void testCoinsResetToZero() {
-        int coins = 10;
-        coins = 0;
-        assertEquals(0, coins);
+    @DisplayName("updateCoins should update the label text")
+    void testUpdateCoinsChangesLabel() {
+        hud.updateCoins(5);
+        assertEquals("Coins: 5", hud.getCoinsLabel().getText());
+    }
+
+    // collecting multiple coins shows latest value
+    @Test
+    @DisplayName("Coins label should always show latest value")
+    void testUpdateCoinsMultipleTimes() {
+        hud.updateCoins(1);
+        hud.updateCoins(2);
+        hud.updateCoins(3);
+        assertEquals("Coins: 3", hud.getCoinsLabel().getText());
+    }
+
+    // check coins can reset to 0 on new game
+    @Test
+    @DisplayName("Coins label should reset to 0")
+    void testUpdateCoinsResetsToZero() {
+        hud.updateCoins(10);
+        hud.updateCoins(0);
+        assertEquals("Coins: 0", hud.getCoinsLabel().getText());
+    }
+
+    // updating coins does not affect score
+    @Test
+    @DisplayName("Updating coins should not change score label")
+    void testCoinsUpdateDoesNotAffectScore() {
+        hud.updateCoins(5);
+        assertEquals("Score: 0", hud.getScoreLabel().getText());
+    }
+
+    // checking that updating coins does not affect lives
+    @Test
+    @DisplayName("Updating coins should not change lives label")
+    void testCoinsUpdateDoesNotAffectLives() {
+        hud.updateCoins(5);
+        assertEquals("Lives: 3", hud.getLivesLabel().getText());
     }
 
     // MENU TESTING
@@ -251,4 +310,5 @@ class HUDManagerTest {
         boolean[] gameStarted = {false};
         assertFalse(gameStarted[0], "Game should not start before Start button is clicked");
     }
+
 }

@@ -33,19 +33,22 @@ public class GameScene {
     private long lastScoreTime = 0;
 
     // --- Theme assets ---
-    private Image[] dummyMids;
-    private Image dummyTop;
+    // City (opening theme — no dummy tiles in production)
     private Image cityStart;
     private Image[] cityMids;
     private Image cityTop;
+
+    // Park
     private Image parkStart;
     private Image[] parkMids;
     private Image parkTop;
+
+    // Subway
     private Image subwayStart;
     private Image[] subwayMids;
+    private Image subwayTop;
 
     // --- Theme transition flags ---
-    private boolean switchedToCity   = false;
     private boolean switchedToPark   = false;
     private boolean switchedToSubway = false;
 
@@ -69,14 +72,7 @@ public class GameScene {
     }
 
     private void setupScenery() {
-        dummyMids = new Image[]{
-                new Image(getClass().getResourceAsStream("/Tiles/dummy_tile_mid_1.png")),
-                new Image(getClass().getResourceAsStream("/Tiles/dummy_tile_mid_2.png")),
-                new Image(getClass().getResourceAsStream("/Tiles/dummy_tile_mid_3.png")),
-                new Image(getClass().getResourceAsStream("/Tiles/dummy_tile_mid_4.png"))
-        };
-        dummyTop = new Image(getClass().getResourceAsStream("/Tiles/dummy_tile_end.png"));
-
+        // --- Load city tiles (opening theme) ---
         cityStart = new Image(getClass().getResourceAsStream("/Tiles/city_tile_start.jpg"));
         cityMids  = new Image[]{
                 new Image(getClass().getResourceAsStream("/Tiles/city_tile_mid_1.jpg")),
@@ -86,6 +82,7 @@ public class GameScene {
         };
         cityTop = new Image(getClass().getResourceAsStream("/Tiles/city_tile_top.jpg"));
 
+        // --- Load park tiles ---
         parkStart = new Image(getClass().getResourceAsStream("/Tiles/park_tile_start.jpg"));
         parkMids  = new Image[]{
                 new Image(getClass().getResourceAsStream("/Tiles/park_tile_mid_1.jpg")),
@@ -95,6 +92,7 @@ public class GameScene {
         };
         parkTop = new Image(getClass().getResourceAsStream("/Tiles/park_tile_top.jpg"));
 
+        // --- Load subway tiles ---
         subwayStart = new Image(getClass().getResourceAsStream("/Tiles/subway_tile_start.jpg"));
         subwayMids  = new Image[]{
                 new Image(getClass().getResourceAsStream("/Tiles/subway_tile_mid_1.jpg")),
@@ -102,18 +100,34 @@ public class GameScene {
                 new Image(getClass().getResourceAsStream("/Tiles/subway_tile_mid_3.jpg")),
                 new Image(getClass().getResourceAsStream("/Tiles/subway_tile_mid_4.jpg"))
         };
+        subwayTop = new Image(getClass().getResourceAsStream("/Tiles/subway_tile_top.jpg"));
 
+        // --- Set up SceneryManager with shuffled city mids as the rolling pool ---
         sceneryManager = new SceneryManager(gamePane, SCROLL_SPEED, screenHeight, screenWidth);
-        sceneryManager.setSceneryVariants(dummyMids);
+        sceneryManager.setSceneryVariants(cityMids); // shuffled mids are the default pool
 
-        double tileHeight = dummyMids[0].getHeight();
+        // --- Spawn initial tiles: tile[0] = cityStart, rest = shuffled mids ---
+        // Use cityStart height as the reference tile size
+        double tileHeight = cityStart.getHeight();
         int tilesNeeded = (int) Math.ceil(screenHeight / tileHeight) + 1;
+
+        // Tiles scroll downward — the player sees the bottom of the screen first.
+        // cityStart goes on the last tile (highest Y, closest to the player) and
+        // shuffled mids fill everything above it.
         for (int i = 0; i < tilesNeeded; i++) {
-            SceneryTile tile = sceneryManager.spawnTile(i * tileHeight);
+            double yPos = i * tileHeight;
+            SceneryTile tile;
+            if (i == tilesNeeded - 1) {
+                // Last tile sits at the bottom — this is what the player sees first
+                tile = sceneryManager.spawnTileWithImage(cityStart, yPos);
+            } else {
+                // Everything above is shuffled mids (scroll into view after start)
+                tile = sceneryManager.spawnTile(yPos);
+            }
             gameObjects.add(tile);
         }
 
-        System.out.println("GameScene: scenery tiles spawned.");
+        System.out.println("GameScene: city scenery tiles spawned (shuffled mids + start at bottom).");
     }
 
     private void setupPlayer() {
@@ -141,6 +155,9 @@ public class GameScene {
         hudManager   = new HUDManager(gamePane);
         hudManager.setupHUD();
         scoreManager = new ScoreManager(hudManager);
+
+        // Give the player a reference to ScoreManager so it can lose lives on collision
+        player.setScoreManager(scoreManager);
     }
 
     // ===============================
@@ -150,13 +167,14 @@ public class GameScene {
         gameLoop = new AnimationTimer() {
             @Override
             public void handle(long now) {
+                update();
+
                 // Increment score once per second (now is in nanoseconds)
                 if (lastScoreTime == 0) lastScoreTime = now;
                 if (now - lastScoreTime >= 1_000_000_000L) {
                     scoreManager.incrementScore();
                     lastScoreTime = now;
                 }
-                update();
             }
         };
         gameLoop.start();
@@ -186,15 +204,15 @@ public class GameScene {
     // ===============================
     public void update() {
         // --- Theme transition checks ---
+        // City is the opening theme. Transitions fire on score milestones.
+        // switchTheme(outgoingTop, incomingStart, incomingMids) — the outgoing
+        // top tile plays once on the next recycle before the new start tile appears.
         int score = scoreManager.getScore();
 
-        if (!switchedToCity && score >= 100) {
-            switchedToCity = true;
-            sceneryManager.switchTheme(dummyTop, cityStart, cityMids);
-        } else if (!switchedToPark && score >= 200) {
+        if (!switchedToPark && score >= 100) {
             switchedToPark = true;
             sceneryManager.switchTheme(cityTop, parkStart, parkMids);
-        } else if (!switchedToSubway && score >= 300) {
+        } else if (!switchedToSubway && score >= 200) {
             switchedToSubway = true;
             sceneryManager.switchTheme(parkTop, subwayStart, subwayMids);
         }
