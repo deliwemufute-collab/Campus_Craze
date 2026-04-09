@@ -27,19 +27,23 @@ public class Player extends GameObject implements Collidable {
     private ScoreManager scoreManager;
 
     /**
-     * Constructor.
+     * Constructs a new Player instance with specified sprite image, initial position,
+     * and road boundaries.
      *
-     * @param spriteImage Image for the player
-     * @param startX      initial X position
-     * @param startY      initial Y position
-     * @param screenWidth screen width for boundary clamping
+     * @param spriteImage the image used for the player's sprite
+     * @param startX the initial X coordinate of the player's position
+     * @param startY the initial Y coordinate of the player's position
+     * @param roadLeft the left boundary of the road (minimum X position the player can occupy)
+     * @param roadRight the right boundary of the road (maximum X position the player can occupy)
      */
-    public Player(Image spriteImage, double startX, double startY, double screenWidth) {
+    public Player(Image spriteImage, double startX, double startY,
+                  double roadLeft, double roadRight) {
         super(startX, startY, spriteImage.getWidth(), spriteImage.getHeight());
         this.sprite = new ImageView(spriteImage);
         this.sprite.setX(startX);
         this.sprite.setY(startY);
-        this.maxX = screenWidth;
+        this.minX = roadLeft;
+        this.maxX = roadRight;   // updatePosition() already does maxX - width, so this is correct
     }
 
     // -------------------------------
