@@ -13,6 +13,11 @@ public class GameScene {
     // --- Constants ---
     private final double screenWidth;
     private final double screenHeight;
+    // Road boundaries: inner edge of city building overlay tiles (measured empirically).
+    // Left building ends at x=170, right building starts at x=850.
+    // Update these if overlay tile assets change width.
+    private static final double ROAD_LEFT_X  = 170.0; // Playable area
+    private static final double ROAD_RIGHT_X = 850.0; // Playable area
     private static final double SCROLL_SPEED = 3.0;
 
     // --- Core pane ---
@@ -132,7 +137,11 @@ public class GameScene {
 
     private void setupPlayer() {
         Image playerImage = new Image(getClass().getResourceAsStream("/Player/player_dummy.png"));
-        player = new Player(playerImage, screenWidth / 2, screenHeight - 150, screenWidth);
+        player = new Player(playerImage,
+                screenWidth / 2,
+                screenHeight - 150,
+                ROAD_LEFT_X,
+                ROAD_RIGHT_X);
         gamePane.getChildren().add(player.getSprite());
         gameObjects.add(player);
     }
