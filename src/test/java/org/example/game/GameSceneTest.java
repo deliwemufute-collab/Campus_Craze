@@ -48,7 +48,7 @@ public class GameSceneTest {
         }
 
         Image playerImg = new Image(getClass().getResourceAsStream("/Player/player_dummy.png"));
-        Player player = new Player(playerImg, 512, 618, 1024);
+        Player player = new Player(playerImg, 512, 618, 170.0, 850.0);
         pane.getChildren().add(player.getSprite());
         scene.getGameObjects().add(player);
 
