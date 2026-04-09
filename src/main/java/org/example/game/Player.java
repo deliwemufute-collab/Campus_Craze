@@ -44,6 +44,10 @@ public class Player extends GameObject implements Collidable {
         this.sprite.setY(startY);
         this.minX = roadLeft;
         this.maxX = roadRight;   // updatePosition() already does maxX - width, so this is correct
+
+        if (this.x < minX) this.x = minX;
+        if (this.x + width > maxX) this.x = maxX - width;
+        sprite.setX(this.x);
     }
 
     // -------------------------------
@@ -82,15 +86,40 @@ public class Player extends GameObject implements Collidable {
         return sprite.getBoundsInParent();
     }
 
+    // Road boundary getters — used by tests and collision snap logic
+    public double getRoadMinX() { return minX; }
+    public double getRoadMaxX() { return maxX; }
+
+    /**
+     * Handles the collision event when the player collides with another
+     * object in the game world. The specific collision behavior depends
+     * on the type of the other object:
+     * - If the collided object is an instance of {@code Obstacle}, the player
+     *   loses a life via the {@code ScoreManager}.
+     * - If the collided object is an instance of {@code BuildingTile},
+     *   the player snaps back to ensure they remain within road boundaries.
+     *
+     * @param other the {@code Collidable} object that this player collided
+     *              with. If {@code null}, no action is taken.
+     */
     @Override
     public void onCollision(Collidable other) {
         if (other == null) return;
 
         System.out.println("Player collided with: " + other.getClass().getSimpleName());
 
-        // If player hits an obstacle, lose a life
         if (other instanceof Obstacle && scoreManager != null) {
             scoreManager.loseLife();
+        }
+
+        // Snap to road boundary if colliding with a building
+        if (other instanceof BuildingTile) {
+            if (x < minX) {
+                x = minX;
+            } else if (x + width > maxX) {
+                x = maxX - width;
+            }
+            sprite.setX(x);   // keep sprite in sync
         }
     }
 
