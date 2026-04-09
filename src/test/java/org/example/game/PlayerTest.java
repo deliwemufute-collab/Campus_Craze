@@ -18,8 +18,9 @@ public class PlayerTest {
 
     @BeforeEach
     void setUp() {
-        Image testImage = new Image("https://via.placeholder.com/50");
-        player = new Player(testImage, 100, 200, 500); // screenWidth = 500
+        Image testImage = new Image(
+                PlayerTest.class.getResourceAsStream("/Player/player_dummy.png"));
+        player = new Player(testImage, 100, 200, 0.0, 500.0);
     }
 
     @Test
@@ -101,5 +102,50 @@ public class PlayerTest {
 
         assertEquals(150, player.getSprite().getX());
         assertEquals(250, player.getSprite().getY());
+    }
+
+    // -----------------------------------------------------------------------
+// Playable area — road boundary clamping (Milestone 2)
+// -----------------------------------------------------------------------
+
+    @Test
+    void testPlayerClampedAtRoadLeftBoundary() {
+        // Create player with explicit road boundaries
+        Image img = new Image(
+                PlayerTest.class.getResourceAsStream("/Player/player_dummy.png"));
+        Player roadPlayer = new Player(img, 512, 618, 170.0, 850.0);
+
+        // Force position left of road edge then update
+        roadPlayer.setX(0);
+        roadPlayer.updatePosition();
+
+        assertTrue(roadPlayer.getX() >= 170.0,
+                "Player must not go left of roadLeft (170)");
+    }
+
+    @Test
+    void testPlayerClampedAtRoadRightBoundary() {
+        Image img = new Image(
+                PlayerTest.class.getResourceAsStream("/Player/player_dummy.png"));
+        Player roadPlayer = new Player(img, 512, 618, 170.0, 850.0);
+
+        // Force position right of road edge then update
+        roadPlayer.setX(900);
+        roadPlayer.updatePosition();
+
+        assertTrue(roadPlayer.getX() + roadPlayer.getWidth() <= 850.0,
+                "Player right edge must not exceed roadRight (850)");
+    }
+
+    @Test
+    void testPlayerStartsInsideRoadBoundaries() {
+        Image img = new Image(
+                PlayerTest.class.getResourceAsStream("/Player/player_dummy.png"));
+        Player roadPlayer = new Player(img, 512, 618, 170.0, 850.0);
+
+        assertTrue(roadPlayer.getX() >= 170.0,
+                "Player should start inside road left boundary");
+        assertTrue(roadPlayer.getX() + roadPlayer.getWidth() <= 850.0,
+                "Player should start inside road right boundary");
     }
 }
