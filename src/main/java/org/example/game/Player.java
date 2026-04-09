@@ -1,5 +1,6 @@
 package org.example.game;
 
+import javafx.geometry.BoundingBox;
 import javafx.geometry.Bounds;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -8,20 +9,31 @@ import javafx.scene.image.ImageView;
  * Represents the player character in the game.
  * Inherits position/size from GameObject and implements Collidable.
  */
+
 public class Player extends GameObject implements Collidable {
 
-    private ImageView sprite;
+    private final ImageView sprite;
+
+    // exact sprite dimensions from player_dummy.png
+    public static final double SPRITE_W = 64.0;
+    public static final double SPRITE_H = 128.0;
+
+    // hit-box shrink factor (fraction of each dimension)
+    private static final double INSET_FRAC = 0.10;
 
     // Movement flags
     private boolean movingLeft = false;
     private boolean movingRight = false;
 
     // Speed in pixels per frame
-    private double speed = 5;
+    private double speed = 5.0;
 
     // Screen boundaries
-    private double minX = 0;
+    private double minX;
     private double maxX;
+
+    // score manager reference to update lives on collision
+    private ScoreManager scoreManager;
 
     /**
      * Constructor.
@@ -31,12 +43,18 @@ public class Player extends GameObject implements Collidable {
      * @param startY      initial Y position
      * @param screenWidth screen width for boundary clamping
      */
+
     public Player(Image spriteImage, double startX, double startY, double screenWidth) {
+        // x = left edge, width/height = actual sprite size
         super(startX, startY, spriteImage.getWidth(), spriteImage.getHeight());
         this.sprite = new ImageView(spriteImage);
         this.sprite.setX(startX);
         this.sprite.setY(startY);
-        this.maxX = screenWidth;
+        this.maxX = screenWidth - 340.0 - SPRITE_W; // right road boundary
+        this.minX = 340.0;              // left road boundary
+        sprite.setFitWidth(SPRITE_W);
+        sprite.setFitHeight(SPRITE_H);
+        sprite.setPreserveRatio(true);
     }
 
     // -------------------------------
@@ -63,23 +81,32 @@ public class Player extends GameObject implements Collidable {
         if (movingRight) x += speed;
 
         // Clamp to screen boundaries
-        if (x < minX) x = minX;
-        if (x > maxX - width) x = maxX - width;
+        x = Math.max(minX, Math.min(maxX, x));
 
         sprite.setX(x);
         sprite.setY(y);
     }
 
+    /**
+     * Manual BoundingBox — no layout pass needed. x = LEFT EDGE.
+     * 10 % inset on all sides trims transparent PNG edges.
+     */
     @Override
     public Bounds getBounds() {
-        return sprite.getBoundsInParent();
+        double inX = width  * INSET_FRAC;
+        double inY = height * INSET_FRAC;
+        return new BoundingBox(x + inX, y + inY, width - inX * 2, height - inY * 2);
     }
 
     @Override
     public void onCollision(Collidable other) {
-        // For now, just print collision debug
-        System.out.println("Player collided with: " + other.getClass().getSimpleName());
-        // TODO: reduce lives / bounce / stop movement if needed
+        System.out.println("[Player] hit " + other.getClass().getSimpleName());
+        if (other instanceof Obstacle && scoreManager != null) {
+            scoreManager.loseLife();
+        }
+        if (other instanceof Coin && scoreManager != null) {
+            scoreManager.addCoin();
+        }
     }
 
     // -------------------------------
@@ -87,5 +114,10 @@ public class Player extends GameObject implements Collidable {
     // -------------------------------
     public ImageView getSprite() {
         return sprite;
+    }
+
+    // it lets GameScene pass in the score manager
+    public void setScoreManager(ScoreManager scoreManager) {
+        this.scoreManager = scoreManager;
     }
 }

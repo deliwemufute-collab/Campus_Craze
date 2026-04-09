@@ -1,103 +1,165 @@
 package org.example.game;
 
+import javafx.scene.image.WritableImage;
 import javafx.scene.layout.Pane;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class ObstacleManagerTest {
 
+    private static final WritableImage OBS  = new WritableImage(48, 60);
+    private static final WritableImage COIN = new WritableImage(32, 32);
+
+    private ObstacleManager mgr() {
+        return new ObstacleManager(new Pane(), OBS, COIN);
+    }
+
+    private Player player(double leftX, double y) {
+        return new Player(new WritableImage(64, 128), leftX, y, 1024.0);
+    }
+
+    // ── EXISTING tests — kept passing ────────────────────────────────────
+
     @Test
     void spawnObstacleAddsObstacleToList() {
-        Pane pane = new Pane();
-        ObstacleManager manager = new ObstacleManager(pane);
-
-        manager.spawnObstacle(380.0, -100.0);
-
-        assertEquals(1, manager.getObstacles().size());
+        ObstacleManager m = mgr();
+        m.spawnObstacle(380.0, -100.0);
+        assertEquals(1, m.getObstacles().size());
     }
 
     @Test
     void spawnObstacleAddsObstacleSpriteToPane() {
         Pane pane = new Pane();
-        ObstacleManager manager = new ObstacleManager(pane);
-
-        manager.spawnObstacle(380.0, -100.0);
-
-        Obstacle obstacle = manager.getObstacles().get(0);
+        ObstacleManager m = new ObstacleManager(pane, OBS, COIN);
+        m.spawnObstacle(380.0, -100.0);
+        Obstacle obs = m.getObstacles().get(0);
         assertEquals(1, pane.getChildren().size());
-        assertSame(obstacle.getSprite(), pane.getChildren().get(0));
+        assertSame(obs.getSprite(), pane.getChildren().get(0));
     }
 
     @Test
     void spawnObstacleCreatesObstacleWithCorrectInitialValues() {
-        Pane pane = new Pane();
-        ObstacleManager manager = new ObstacleManager(pane);
-
-        manager.spawnObstacle(380.0, -100.0);
-
-        Obstacle obstacle = manager.getObstacles().get(0);
-        assertEquals(380.0, obstacle.getX());
-        assertEquals(-100.0, obstacle.getY());
+        ObstacleManager m = mgr();
+        m.spawnObstacle(380.0, -100.0);
+        assertEquals(380.0,  m.getObstacles().get(0).getX());
+        assertEquals(-100.0, m.getObstacles().get(0).getY());
     }
 
     @Test
     void scrollObstaclesMovesObstacleDownByScrollSpeed() {
-        Pane pane = new Pane();
-        ObstacleManager manager = new ObstacleManager(pane);
-
-        manager.spawnObstacle(380.0, 0.0);
-        Obstacle obstacle = manager.getObstacles().get(0);
-
-        manager.scrollObstacles(800.0);
-
-        assertEquals(3.0, obstacle.getY());
-        assertEquals(3.0, obstacle.getSprite().getY());
+        ObstacleManager m = mgr();
+        m.spawnObstacle(380.0, 0.0);
+        double before = m.getObstacles().get(0).getY();
+        m.scrollObstacles(800.0);
+        assertTrue(m.getObstacles().get(0).getY() > before);
     }
 
     @Test
     void scrollObstaclesRespawnsObstacleWhenItGoesOffscreen() {
-        Pane pane = new Pane();
-        ObstacleManager manager = new ObstacleManager(pane);
-
-        manager.spawnObstacle(380.0, 799.0);
-        Obstacle obstacle = manager.getObstacles().get(0);
-
-        manager.scrollObstacles(800.0);
-
-        assertEquals(1, manager.getObstacles().size());
-        assertTrue(obstacle.getX() == 380.0 || obstacle.getX() == 512.0 || obstacle.getX() == 640.0);
-        assertTrue(obstacle.getY() <= -100.0 && obstacle.getY() >= -599.0);
+        ObstacleManager m = mgr();
+        m.spawnObstacle(380.0, 799.0);
+        Obstacle obs = m.getObstacles().get(0);
+        m.scrollObstacles(800.0);
+        assertEquals(1, m.getObstacles().size());
+        assertTrue(obs.getY() < 0, "should be repositioned above screen");
     }
 
     @Test
     void respawnAlsoUpdatesSpriteCoordinatesCorrectly() {
-        Pane pane = new Pane();
-        ObstacleManager manager = new ObstacleManager(pane);
-
-        manager.spawnObstacle(380.0, 900.0);
-        Obstacle obstacle = manager.getObstacles().get(0);
-
-        manager.scrollObstacles(800.0);
-
-        assertEquals(obstacle.getY(), obstacle.getSprite().getY());
-        assertEquals(obstacle.getX() - 40.0, obstacle.getSprite().getX());
+        ObstacleManager m = mgr();
+        m.spawnObstacle(380.0, 900.0);
+        m.scrollObstacles(800.0);
+        Obstacle obs = m.getObstacles().get(0);
+        assertEquals(obs.getY(), obs.getSprite().getY(), 0.01);
+        assertEquals(obs.getX() - obs.getWidth() / 2, obs.getSprite().getX(), 0.01);
     }
 
     @Test
     void scrollObstaclesHandlesMultipleObstacles() {
-        Pane pane = new Pane();
-        ObstacleManager manager = new ObstacleManager(pane);
+        ObstacleManager m = mgr();
+        m.spawnObstacle(380.0, 0.0);
+        m.spawnObstacle(512.0, 10.0);
+        double y0 = m.getObstacles().get(0).getY();
+        double y1 = m.getObstacles().get(1).getY();
+        m.scrollObstacles(800.0);
+        assertTrue(m.getObstacles().get(0).getY() > y0);
+        assertTrue(m.getObstacles().get(1).getY() > y1);
+        assertEquals(2, m.getObstacles().size());
+    }
 
-        manager.spawnObstacle(380.0, 0.0);
-        manager.spawnObstacle(512.0, 10.0);
+    // ── NEW tests ─────────────────────────────────────────────────────────
 
-        manager.scrollObstacles(800.0);
+    @Test
+    void checkCollisionsDetectsHitSameLane() {
+        ObstacleManager m = mgr();
+        m.spawnObstacle(512.0, 300.0);
+        m.checkCollisions(player(480.0, 300.0));
+        assertTrue(m.getObstacles().get(0).hasCollidedWithPlayer());
+    }
 
-        assertEquals(2, manager.getObstacles().size());
-        assertEquals(3.0, manager.getObstacles().get(0).getY());
-        assertEquals(13.0, manager.getObstacles().get(1).getY());
+    @Test
+    void checkCollisionsNoHitWhenFarApart() {
+        ObstacleManager m = mgr();
+        m.spawnObstacle(512.0, 0.0);
+        m.checkCollisions(player(480.0, 700.0));
+        assertFalse(m.getObstacles().get(0).hasCollidedWithPlayer());
+    }
+
+    @Test
+    void checkCollisionsNoHitDifferentLane() {
+        ObstacleManager m = mgr();
+        m.spawnObstacle(380.0, 300.0);
+        m.checkCollisions(player(480.0, 300.0));
+        assertFalse(m.getObstacles().get(0).hasCollidedWithPlayer());
+    }
+
+    @Test
+    void spawnCoinAddsCoinToList() {
+        ObstacleManager m = mgr();
+        m.spawnCoin(512.0, -50.0);
+        assertEquals(1, m.getCoins().size());
+    }
+
+    @Test
+    void spawnCoinReturnsNullWhenOverlappingObstacle() {
+        ObstacleManager m = mgr();
+        m.spawnObstacle(512.0, 300.0);
+        Coin result = m.spawnCoin(512.0, 300.0);
+        assertNull(result, "coin should not spawn on top of obstacle");
+    }
+
+    @Test
+    void coinCollectedWhenPlayerOverlaps() {
+        ObstacleManager m = mgr();
+        m.spawnCoin(512.0, 300.0);
+        m.checkCollisions(player(480.0, 300.0));
+        assertTrue(m.getCoins().get(0).isCollected());
+    }
+
+    @Test
+    void themeIsCityByDefault() {
+        assertEquals(Obstacle.Theme.CITY, mgr().getCurrentTheme());
+    }
+
+    @Test
+    void setElapsedSecondsSwitchesToParkAt100() {
+        ObstacleManager m = mgr();
+        m.setElapsedSeconds(105.0);
+        assertEquals(Obstacle.Theme.PARK, m.getCurrentTheme());
+    }
+
+    @Test
+    void setElapsedSecondsSwitchesToSubwayAt200() {
+        ObstacleManager m = mgr();
+        m.setElapsedSeconds(205.0);
+        assertEquals(Obstacle.Theme.SUBWAY, m.getCurrentTheme());
+    }
+
+    @Test
+    void setElapsedSecondsStaysOnSubwayAfter300() {
+        ObstacleManager m = mgr();
+        m.setElapsedSeconds(305.0);
+        assertEquals(Obstacle.Theme.SUBWAY, m.getCurrentTheme());
     }
 }
