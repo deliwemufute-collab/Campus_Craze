@@ -20,6 +20,15 @@ public class GameScene {
     private static final double ROAD_RIGHT_X = 890.0; // Playable area
     private static final double SCROLL_SPEED = 3.0;
 
+    private static final double TILE_H       = 320.0;  // actual tile height from assets
+
+    // -------------------------------------------------------
+    // Fields
+    // -------------------------------------------------------
+
+    private final double screenWidth;
+    private final double screenHeight;
+
     // --- Core pane ---
     private final Pane gamePane;
 
@@ -73,6 +82,12 @@ public class GameScene {
     // Used on recycle to know whether to show a building on a given tile slot.
     private final java.util.Map<SceneryTile, BuildingTile[]> overlayMap = new java.util.HashMap<>();
 
+    // timing
+    private long   gameStartNano  = 0;
+    private double elapsedSeconds = 0;
+    private long   lastScoreNano  = 0;
+
+
     // ===============================
     // Constructor
     // ===============================
@@ -85,6 +100,7 @@ public class GameScene {
     // ===============================
     // Initialization
     // ===============================
+
     public void initializeGameObjects() {
         setupScenery();
         setupPlayer();
@@ -271,10 +287,24 @@ public class GameScene {
     // ===============================
     // Game Loop
     // ===============================
+
     public void startGameLoop() {
         gameLoop = new AnimationTimer() {
             @Override
             public void handle(long now) {
+                if (gameStartNano == 0) {
+                    gameStartNano = now;
+                    lastScoreNano = now;
+                }
+
+                elapsedSeconds = (now - gameStartNano) / 1_000_000_000.0;
+
+                // increment score once per second
+                if (now - lastScoreNano >= 1_000_000_000L) {
+                    scoreManager.incrementScore();
+                    lastScoreNano = now;
+                }
+
                 update();
 
                 // Increment score once per second (now is in nanoseconds)
@@ -286,7 +316,11 @@ public class GameScene {
             }
         };
         gameLoop.start();
-        System.out.println("GameScene: Game loop started.");
+        System.out.println("GameScene: loop started.");
+    }
+
+    public void stopGameLoop() {
+        if (gameLoop != null) gameLoop.stop();
     }
 
     public void setupKeyboard(Scene scene) {
@@ -342,10 +376,10 @@ public class GameScene {
         // --- Collision detection ---
         for (int i = 0; i < gameObjects.size(); i++) {
             if (!(gameObjects.get(i) instanceof Collidable)) continue;
-            Collidable c1 = (Collidable) gameObjects.get(i);
-
             for (int j = i + 1; j < gameObjects.size(); j++) {
                 if (!(gameObjects.get(j) instanceof Collidable)) continue;
+                if (isManagedPair(gameObjects.get(i), gameObjects.get(j))) continue;
+                Collidable c1 = (Collidable) gameObjects.get(i);
                 Collidable c2 = (Collidable) gameObjects.get(j);
 
                 if (c1.getBounds().intersects(c2.getBounds())) {
@@ -359,6 +393,15 @@ public class GameScene {
                 }
             }
         }
+    }
+
+    /** True for pairs already handled by ObstacleManager — prevents double collision. */
+    private boolean isManagedPair(GameObject a, GameObject b) {
+        boolean aM = a instanceof Obstacle || a instanceof Coin;
+        boolean bM = b instanceof Obstacle || b instanceof Coin;
+        boolean aP = a instanceof Player;
+        boolean bP = b instanceof Player;
+        return (aM && bP) || (aP && bM);
     }
 
     // ===============================
@@ -380,4 +423,9 @@ public class GameScene {
     void setSceneryManager(SceneryManager sceneryManager) {
         this.sceneryManager = sceneryManager;
     }
+
+    public ObstacleManager  getObstacleManager() {
+        return obstacleManager;
+    }
+
 }

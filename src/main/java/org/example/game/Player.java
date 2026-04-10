@@ -1,5 +1,6 @@
 package org.example.game;
 
+import javafx.geometry.BoundingBox;
 import javafx.geometry.Bounds;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -10,6 +11,7 @@ import javafx.scene.image.ImageView;
  * Implements Collidable: must provide getBounds(), updatePosition(), onCollision()
  * @author Deliwe Mufute
  */
+
 public class Player extends GameObject implements Collidable {
 
     /** The visual representation of the player on screen */
@@ -62,6 +64,9 @@ public class Player extends GameObject implements Collidable {
     private long lastBuildingCollisionTime = 0;
     private static final long BUILDING_COLLISION_COOLDOWN_MS = 500; // half a second
 
+
+    // score manager reference to update lives on collision
+    private ScoreManager scoreManager;
 
     /**
      * Creates a new Player at the given position within the road boundaries.
@@ -214,6 +219,11 @@ public class Player extends GameObject implements Collidable {
     }
 
     /** Injects ScoreManager so Player can trigger loseLife() */
+    public void setScoreManager(ScoreManager scoreManager) {
+        this.scoreManager = scoreManager;
+    }
+
+    // it lets GameScene pass in the score manager
     public void setScoreManager(ScoreManager scoreManager) {
         this.scoreManager = scoreManager;
     }

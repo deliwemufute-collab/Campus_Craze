@@ -1,76 +1,168 @@
 package org.example.game;
 
+import javafx.animation.FadeTransition;
+import javafx.geometry.BoundingBox;
 import javafx.geometry.Bounds;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.Pane;
+import javafx.util.Duration;
 
 /**
- * Represents an obstacle in the game.
+ * Represents a hazard obstacle the player must avoid.
+ *
  * Extends GameObject and implements Collidable.
+ *
+ * x = CENTRE of the obstacle (lane value).
+ * Sprite placed at (x - width/2) so it centres on the lane.
+ * setX/setY are overridden to keep sprite in sync.
+ *
+ * getBounds() uses a manual BoundingBox — NOT getBoundsInParent() which
+ * needs a JavaFX layout pass and returns zeros on early frames.
+ *
+ * Size tiers match actual PNG dimensions:
+ *   SMALL 48x60   MEDIUM 74x103   LARGE 140x200
+ *
+ * On collision with Player, showExplosion() overlays the matching
+ * explosion PNG, fades it out, then removes it from the pane.
+ *
+ * Legacy 3-arg constructor keeps existing ObstacleTest passing unchanged.
  */
 public class Obstacle extends GameObject implements Collidable {
 
+    // ── Size tiers ─────────────────────────────────────────────────────────
+
+    public enum Size {
+        SMALL (48,  60),
+        MEDIUM(74,  103),
+        LARGE (140, 200);
+
+        public final double w, h;
+        Size(double w, double h) { this.w = w; this.h = h; }
+    }
+
+    // ── Theme ──────────────────────────────────────────────────────────────
+
+    public enum Theme { CITY, PARK, SUBWAY }
+
+    // ── Fields ─────────────────────────────────────────────────────────────
+
     private final ImageView sprite;
+    private final Theme     theme;
+    private final Size      size;
+
+    private Image explosionImage;
+    private Pane  gamePane;
+
+    private boolean collidedWithPlayer = false;
+
+    // ── Full constructor ───────────────────────────────────────────────────
+
+    public Obstacle(Image spriteImage, double centreX, double startY,
+                    Theme theme, Size size) {
+        super(centreX, startY, size.w, size.h);
+        this.theme  = theme;
+        this.size   = size;
+        this.sprite = new ImageView(spriteImage);
+        sprite.setFitWidth(size.w);
+        sprite.setFitHeight(size.h);
+        sprite.setPreserveRatio(false);
+        syncSprite();
+    }
 
     /**
-     * Constructor.
-     *
-     * @param spriteImage Image of the obstacle
-     * @param startX      initial X position
-     * @param startY      initial Y position
+     * Legacy 3-arg constructor — keeps existing ObstacleTest passing.
+     * Renders at 80x80 to match the original test assertions.
      */
-    public Obstacle(Image spriteImage, double startX, double startY) {
-        super(startX, startY, 80, 80); // using fixed width/height
+    public Obstacle(Image spriteImage, double centreX, double startY) {
+        super(centreX, startY, 80, 80);
+        this.theme  = Theme.CITY;
+        this.size   = Size.SMALL;
         this.sprite = new ImageView(spriteImage);
-        sprite.setFitWidth(width);
-        sprite.setFitHeight(height);
+        sprite.setFitWidth(80);
+        sprite.setFitHeight(80);
         sprite.setPreserveRatio(true);
-        sprite.setX(x - width / 2);
-        sprite.setY(y);
+        syncSprite();
     }
 
-    // -------------------------------
-    // GameObject / Collidable methods
-    // -------------------------------
-    @Override
-    public void update() {
-        updatePosition();
+    // ── Explosion injection ────────────────────────────────────────────────
+
+    public void setExplosionImage(Image img, Pane pane) {
+        this.explosionImage = img;
+        this.gamePane       = pane;
     }
 
-    @Override
-    public void updatePosition() {
-        // Example: simple vertical scroll (called from GameScene)
-        sprite.setX(x - width / 2);
-        sprite.setY(y);
-    }
+    // ── GameObject ─────────────────────────────────────────────────────────
+
+    @Override public void update()          { updatePosition(); }
+    @Override public void updatePosition()  { syncSprite(); }
+
+    // ── Collidable ─────────────────────────────────────────────────────────
 
     @Override
     public Bounds getBounds() {
-        return sprite.getBoundsInParent();
+        double inX = width  * 0.10;
+        double inY = height * 0.10;
+        return new BoundingBox(
+                x - width / 2 + inX,
+                y             + inY,
+                width  - inX * 2,
+                height - inY * 2);
     }
 
     @Override
     public void onCollision(Collidable other) {
-        System.out.println("Obstacle collided with: " + other.getClass().getSimpleName());
-        // TODO: define collision behavior if needed
+        if (other instanceof Player) {
+            collidedWithPlayer = true;
+            showExplosion();
+            System.out.println("[Obstacle:" + theme + ":" + size + "] hit Player");
+        }
     }
 
-    // -------------------------------
-    // Specific to Obstacle
-    // -------------------------------
-    public void scrollDown(double speed) {
-        y += speed;
-        updatePosition();
+    // ── setX / setY ────────────────────────────────────────────────────────
+
+    @Override public void setX(double x) { super.setX(x); syncSprite(); }
+    @Override public void setY(double y) { super.setY(y); syncSprite(); }
+
+    // ── Movement ───────────────────────────────────────────────────────────
+
+    public void scrollDown(double speed) { y += speed; syncSprite(); }
+    public void scrollUp(double speed)   { y -= speed; syncSprite(); }
+
+    public boolean isOffscreen(double screenH) { return y > screenH; }
+    public boolean isAboveScreen()             { return y + height < 0; }
+
+    // ── Explosion ──────────────────────────────────────────────────────────
+
+    private void showExplosion() {
+        if (explosionImage == null || gamePane == null) return;
+        ImageView fx = new ImageView(explosionImage);
+        fx.setFitWidth(width);
+        fx.setFitHeight(height);
+        fx.setPreserveRatio(false);
+        fx.setX(x - width / 2);
+        fx.setY(y);
+        fx.setViewOrder(-50);
+        gamePane.getChildren().add(fx);
+        FadeTransition fade = new FadeTransition(Duration.millis(600), fx);
+        fade.setFromValue(1.0);
+        fade.setToValue(0.0);
+        fade.setOnFinished(e -> gamePane.getChildren().remove(fx));
+        fade.play();
     }
 
-    public boolean isOffscreen(double screenHeight) {
-        return y > screenHeight;
+    // ── Helper ─────────────────────────────────────────────────────────────
+
+    private void syncSprite() {
+        sprite.setX(x - width / 2);
+        sprite.setY(y);
     }
 
-    // -------------------------------
-    // Getter for sprite
-    // -------------------------------
-    public ImageView getSprite() {
-        return sprite;
-    }
+    // ── Getters ────────────────────────────────────────────────────────────
+
+    public boolean   hasCollidedWithPlayer() { return collidedWithPlayer; }
+    public void      resetCollision()        { collidedWithPlayer = false; }
+    public Theme     getTheme()              { return theme; }
+    public Size      getSize()               { return size; }
+    public ImageView getSprite()             { return sprite; }
 }
