@@ -183,6 +183,21 @@ public class Player extends GameObject implements Collidable {
 
     /** Returns right road boundary */
     public double getRoadMaxX()   { return maxX;   }
+    /** Returns current horizontal velocity — used in tests */
+    public double getVelocityX()  { return velocityX; }
+
+    /** Returns current vertical velocity — used in tests */
+    public double getVelocityY()  { return velocityY; }
+
+    /**
+     * Sets custom Y boundaries for vertical movement.
+     * @param minY highest Y the player can reach
+     * @param maxY lowest Y the player can reach
+     */
+    public void setYBoundaries(double minY, double maxY) {
+        this.minY = minY;
+        this.maxY = maxY;
+    }
 
     /** Injects ScoreManager so Player can trigger loseLife() */
     public void setScoreManager(ScoreManager scoreManager) {
