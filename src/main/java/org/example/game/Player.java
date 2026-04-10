@@ -58,6 +58,11 @@ public class Player extends GameObject implements Collidable {
     /** Bottom boundary — how far backward player can move */
     private double maxY;
 
+    // Cooldown to prevent collision firing every frame for the same contact
+    private long lastBuildingCollisionTime = 0;
+    private static final long BUILDING_COLLISION_COOLDOWN_MS = 500; // half a second
+
+
     /**
      * Creates a new Player at the given position within the road boundaries.
      * @param spriteImage the image to display as the player character
@@ -164,13 +169,22 @@ public class Player extends GameObject implements Collidable {
     @Override
     public void onCollision(Collidable other) {
         if (other == null) return;
-        System.out.println("Player collided with: " + other.getClass().getSimpleName());
         if (other instanceof Obstacle && scoreManager != null) {
             scoreManager.loseLife();
         }
         if (other instanceof BuildingTile) {
-            if (x < minX) { x = minX; }
-            else if (x + width > maxX) { x = maxX - width; }
+            long now = System.currentTimeMillis();
+            if (now - lastBuildingCollisionTime < BUILDING_COLLISION_COOLDOWN_MS) return;
+            lastBuildingCollisionTime = now;
+
+            // Only reaches here once per cooldown window
+            System.out.println("Player collided with: " + other.getClass().getSimpleName());
+
+            if (x < minX) {
+                x = minX;
+            } else if (x + width > maxX) {
+                x = maxX - width;
+            }
             sprite.setX(x);
         }
     }
