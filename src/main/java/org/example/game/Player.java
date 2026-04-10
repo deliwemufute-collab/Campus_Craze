@@ -46,7 +46,7 @@ public class Player extends GameObject implements Collidable {
 
     public Player(Image spriteImage, double startX, double startY, double screenWidth) {
         // x = left edge, width/height = actual sprite size
-        super(startX, startY, spriteImage.getWidth(), spriteImage.getHeight());
+        super(startX, startY, SPRITE_W, SPRITE_H);
         this.sprite = new ImageView(spriteImage);
         this.sprite.setX(startX);
         this.sprite.setY(startY);
@@ -103,9 +103,6 @@ public class Player extends GameObject implements Collidable {
         System.out.println("[Player] hit " + other.getClass().getSimpleName());
         if (other instanceof Obstacle && scoreManager != null) {
             scoreManager.loseLife();
-        }
-        if (other instanceof Coin && scoreManager != null) {
-            scoreManager.addCoin();
         }
     }
 
