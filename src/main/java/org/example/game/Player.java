@@ -20,6 +20,11 @@ public class Player extends GameObject implements Collidable {
 
     /** True while RIGHT arrow key is held down */
     private boolean movingRight = false;
+    /** True while UP arrow key is held down — slight forward movement */
+    private boolean movingUp    = false;
+
+    /** True while DOWN arrow key is held down — slight backward movement */
+    private boolean movingDown  = false;
 
     /** Left road boundary — player cannot go left of this */
     private final double minX;
@@ -62,6 +67,18 @@ public class Player extends GameObject implements Collidable {
 
     /** Called when RIGHT arrow key is released */
     public void stopRight() { movingRight = false; }
+    /** Called when UP arrow key is pressed */
+    public void moveUp()    { movingUp    = true;  }
+
+    /** Called when DOWN arrow key is pressed */
+    public void moveDown()  { movingDown  = true;  }
+
+    /** Called when UP arrow key is released */
+    public void stopUp()    { movingUp    = false; }
+
+    /** Called when DOWN arrow key is released */
+    public void stopDown()  { movingDown  = false; }
+
 
     /** Called every frame by GameScene polymorphically */
     @Override
