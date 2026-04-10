@@ -26,6 +26,10 @@ public class Player extends GameObject implements Collidable {
     // score manager reference to update lives on collision
     private ScoreManager scoreManager;
 
+    // Cooldown to prevent collision firing every frame for the same contact
+    private long lastBuildingCollisionTime = 0;
+    private static final long BUILDING_COLLISION_COOLDOWN_MS = 500; // half a second
+
     /**
      * Constructs a new Player instance with specified sprite image, initial position,
      * and road boundaries.
@@ -106,20 +110,26 @@ public class Player extends GameObject implements Collidable {
     public void onCollision(Collidable other) {
         if (other == null) return;
 
-        System.out.println("Player collided with: " + other.getClass().getSimpleName());
-
         if (other instanceof Obstacle && scoreManager != null) {
             scoreManager.loseLife();
         }
 
         // Snap to road boundary if colliding with a building
         if (other instanceof BuildingTile) {
+            long now = System.currentTimeMillis();
+            if (now - lastBuildingCollisionTime < BUILDING_COLLISION_COOLDOWN_MS) return;
+            lastBuildingCollisionTime = now;
+
+            // Only reaches here once per cooldown window
+            System.out.println("Player collided with: " + other.getClass().getSimpleName());
+
+
             if (x < minX) {
                 x = minX;
             } else if (x + width > maxX) {
                 x = maxX - width;
             }
-            sprite.setX(x);   // keep sprite in sync
+            sprite.setX(x);
         }
     }
 

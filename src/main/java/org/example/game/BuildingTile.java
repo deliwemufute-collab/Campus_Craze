@@ -63,8 +63,6 @@ public class BuildingTile extends SceneryTile implements Collidable {
     @Override
     public void onCollision(Collidable other) {
         if (other == null) return;
-        System.out.println("BuildingTile: collision with "
-                + other.getClass().getSimpleName());
         // TODO: trigger player boundary reaction (Milestone 3+)
     }
 }
