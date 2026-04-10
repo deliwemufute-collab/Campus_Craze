@@ -16,8 +16,8 @@ public class GameScene {
     // Road boundaries: inner edge of city building overlay tiles (measured empirically).
     // Left building ends at x=170, right building starts at x=850.
     // Update these if overlay tile assets change width.
-    private static final double ROAD_LEFT_X  = 170.0; // Playable area
-    private static final double ROAD_RIGHT_X = 850.0; // Playable area
+    private static final double ROAD_LEFT_X  = 130.0; // Playable area
+    private static final double ROAD_RIGHT_X = 890.0; // Playable area
     private static final double SCROLL_SPEED = 3.0;
 
     // --- Core pane ---
@@ -56,6 +56,22 @@ public class GameScene {
     // --- Theme transition flags ---
     private boolean switchedToPark   = false;
     private boolean switchedToSubway = false;
+
+    // --- Overlay assets ---
+    // Left and right building column images used for all themes.
+    // Park and subway use city overlays as placeholders until their own assets are added.
+    private Image[] overlayLeftVariants;
+    private Image[] overlayRightVariants;
+
+    // Minimum road tiles to skip between building spawns — prevents clustering.
+    private static final int OVERLAY_MIN_GAP = 2;
+
+    // Approximate probability of spawning a building on an eligible tile (1 in N).
+    private static final int OVERLAY_SPAWN_CHANCE = 3;
+
+    // Maps each road tile to its paired [leftBuilding, rightBuilding], or null if no building.
+    // Used on recycle to know whether to show a building on a given tile slot.
+    private final java.util.Map<SceneryTile, BuildingTile[]> overlayMap = new java.util.HashMap<>();
 
     // ===============================
     // Constructor
@@ -107,6 +123,18 @@ public class GameScene {
         };
         subwayTop = new Image(getClass().getResourceAsStream("/Tiles/subway_tile_top.jpg"));
 
+        // --- Load overlay assets (city used as placeholder for all themes) ---
+        overlayLeftVariants = new Image[]{
+                new Image(getClass().getResourceAsStream("/Tiles/city_overlay_left_1.png")),
+                new Image(getClass().getResourceAsStream("/Tiles/city_overlay_left_2.png")),
+                new Image(getClass().getResourceAsStream("/Tiles/city_overlay_left_3.png"))
+        };
+        overlayRightVariants = new Image[]{
+                new Image(getClass().getResourceAsStream("/Tiles/city_overlay_right_1.png")),
+                new Image(getClass().getResourceAsStream("/Tiles/city_overlay_right_2.png")),
+                new Image(getClass().getResourceAsStream("/Tiles/city_overlay_right_3.png"))
+        };
+
         // --- Set up SceneryManager with shuffled city mids as the rolling pool ---
         sceneryManager = new SceneryManager(gamePane, SCROLL_SPEED, screenHeight, screenWidth);
         sceneryManager.setSceneryVariants(cityMids); // shuffled mids are the default pool
@@ -131,8 +159,79 @@ public class GameScene {
             }
             gameObjects.add(tile);
         }
+        // --- Spawn building overlays sparsely across the initial road tiles ---
+        setupOverlays(tileHeight);
 
         System.out.println("GameScene: city scenery tiles spawned (shuffled mids + start at bottom).");
+    }
+
+    /**
+     * Configures overlay tiles (such as buildings) on the scrolling road scenery.
+     * This method places pairs of overlay tiles at specific positions on the road,
+     * ensuring minimum spacing between overlays and using randomized placement logic.
+     *
+     * @param tileHeight the height of the scenery tiles in the game, used to vertically position the overlays
+     */
+    private void setupOverlays(double tileHeight) {
+        java.util.List<SceneryTile> roadTiles = sceneryManager.getTiles();
+        java.util.Random rng = new java.util.Random();
+
+        int skipRemaining  = 0;
+        int overlayIndex   = 0;
+        boolean firstSpawned = false;  // guarantee at least one building
+
+        for (SceneryTile roadTile : roadTiles) {
+            // Start tile never gets a building
+            if (roadTile.getSprite().getImage() == cityStart) {
+                overlayMap.put(roadTile, null);
+                continue;
+            }
+
+            // Enforce minimum gap after previous spawn
+            if (skipRemaining > 0) {
+                overlayMap.put(roadTile, null);
+                skipRemaining--;
+                continue;
+            }
+
+            // Always spawn on the first eligible tile, then use random chance thereafter
+            boolean spawn = !firstSpawned || rng.nextInt(OVERLAY_SPAWN_CHANCE) == 0;
+            if (!spawn) {
+                overlayMap.put(roadTile, null);
+                continue;
+            }
+
+            // Spawn a building pair for this tile slot
+            Image leftImage  = overlayLeftVariants[overlayIndex % overlayLeftVariants.length];
+            Image rightImage = overlayRightVariants[overlayIndex % overlayRightVariants.length];
+            overlayIndex++;
+
+            double yPos   = roadTile.getY();
+            double rightX = screenWidth - rightImage.getWidth();
+
+            BuildingTile leftBuilding  = new BuildingTile(leftImage,  0,      yPos, SCROLL_SPEED);
+            BuildingTile rightBuilding = new BuildingTile(rightImage, rightX, yPos, SCROLL_SPEED);
+
+            // Add sprites to the pane so they render
+            gamePane.getChildren().add(leftBuilding.getSprite());
+            gamePane.getChildren().add(rightBuilding.getSprite());
+
+            // Register with SceneryManager so they scroll and recycle with the road
+            sceneryManager.registerOverlayTile(leftBuilding);
+            sceneryManager.registerOverlayTile(rightBuilding);
+
+            // Register in gameObjects for collision detection
+            gameObjects.add(leftBuilding);
+            gameObjects.add(rightBuilding);
+
+            overlayMap.put(roadTile, new BuildingTile[]{leftBuilding, rightBuilding});
+
+            firstSpawned  = true;
+            skipRemaining = OVERLAY_MIN_GAP;
+        }
+
+        System.out.println("GameScene: building overlays spawned. Slots with buildings: "
+                + overlayMap.values().stream().filter(v -> v != null).count());
     }
 
     private void setupPlayer() {

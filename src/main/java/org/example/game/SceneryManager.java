@@ -81,14 +81,13 @@ public class SceneryManager {
     // -----------------------------------------------------------------------
 
     /**
-     * Main per-frame method. Scrolls and recycles all background tiles,
-     * then scrolls and recycles all overlay tiles.
-     *
-     * Call this once per game loop frame from GameScene.
+     * Updates the state of the scenery by scrolling and recycling both background tiles
+     * and overlay tiles. Background tiles are reassigned a new image variant during
+     * recycling, while overlay tiles retain their image and are only repositioned.
      */
     public void update() {
-        scrollAndRecycle(tiles);
-        scrollAndRecycle(overlayTiles);
+        scrollAndRecycle(tiles, true);         // background — reassign image on recycle
+        scrollAndRecycle(overlayTiles, false); // overlays   — keep fixed image, just reposition
     }
 
     /**
@@ -109,25 +108,33 @@ public class SceneryManager {
     }
 
     /**
-     * Moves every tile in the list down by scrollSpeed and recycles any
-     * that have gone fully offscreen.
+     * Scrolls a list of SceneryTile objects downward by a constant speed. If a tile
+     * moves offscreen, it is recycled back to the top of the screen at a new position,
+     * and optionally assigned a new image variant.
+     *
+     * @param list          the list of SceneryTile objects to scroll and recycle
+     * @param assignVariant a flag indicating whether to assign a new image variant
+     *                      to tiles that are recycled
      */
-    private void scrollAndRecycle(List<SceneryTile> list) {
+    private void scrollAndRecycle(List<SceneryTile> list, boolean assignVariant) {
         for (SceneryTile tile : list) {
             tile.setY(tile.getY() + scrollSpeed);
         }
 
         for (SceneryTile tile : list) {
             if (tile.getY() >= screenHeight) {
-                // Exclude the tile being recycled from the search
                 double highestY = list.stream()
                         .filter(t -> t != tile)
                         .mapToDouble(SceneryTile::getY)
                         .min()
-                        .orElse(0); // only one tile in list → place at top
+                        .orElse(0);
 
                 tile.setY(highestY - tile.getHeight());
-                assignNextVariant(tile);
+
+                // Only background tiles get a new variant on recycle
+                if (assignVariant) {
+                    assignNextVariant(tile);
+                }
             }
         }
     }
@@ -163,7 +170,7 @@ public class SceneryManager {
      * Prefer update() in production code.
      */
     public void scrollTiles() {
-        scrollAndRecycle(tiles);
+        scrollAndRecycle(tiles, true);
     }
 
     // -----------------------------------------------------------------------
@@ -277,6 +284,17 @@ public class SceneryManager {
             this.sceneryVariants = variants;
         }
         this.nextVariantIndex = 0;
+    }
+
+    /**
+     * Registers an already-constructed SceneryTile (or subclass) as an overlay tile.
+     * Used by GameScene to register BuildingTile instances directly, so the same
+     * object handles both rendering and collision — no duplicate tiles.
+     *
+     * @param tile the tile to register; its sprite must already be added to the pane
+     */
+    public void registerOverlayTile(SceneryTile tile) {
+        overlayTiles.add(tile);
     }
 
     // -----------------------------------------------------------------------
