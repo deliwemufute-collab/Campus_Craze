@@ -109,13 +109,49 @@ public class Player extends GameObject implements Collidable {
     @Override
     public void update() { updatePosition(); }
 
-    /** Updates position each frame — basic movement only for now */
+    /**
+     * Updates the player position each frame using velocity-based movement.
+     * 1. Accelerates velocity in direction of pressed keys
+     * 2. Applies friction when no key pressed — smooth stop
+     * 3. Clamps velocity to max speed
+     * 4. Applies velocity to position
+     * 5. Clamps position to road and Y boundaries
+     * 6. Syncs sprite to updated position
+     */
     @Override
     public void updatePosition() {
-        if (movingLeft)  x -= 5;
-        if (movingRight) x += 5;
-        if (x < minX)         { x = minX; }
-        if (x > maxX - width) { x = maxX - width; }
+
+        // --- HORIZONTAL VELOCITY ---
+        if (movingLeft)  velocityX -= ACCELERATION;
+        if (movingRight) velocityX += ACCELERATION;
+        if (!movingLeft && !movingRight) {
+            velocityX *= DECELERATION;
+            if (Math.abs(velocityX) < 0.1) velocityX = 0;
+        }
+
+        // --- VERTICAL VELOCITY (slight forward/backward) ---
+        if (movingUp)   velocityY -= ACCELERATION;
+        if (movingDown) velocityY += ACCELERATION;
+        if (!movingUp && !movingDown) {
+            velocityY *= DECELERATION;
+            if (Math.abs(velocityY) < 0.1) velocityY = 0;
+        }
+
+        // --- CLAMP VELOCITY TO MAX SPEED ---
+        velocityX = Math.max(-MAX_SPEED_X, Math.min(MAX_SPEED_X, velocityX));
+        velocityY = Math.max(-MAX_SPEED_Y, Math.min(MAX_SPEED_Y, velocityY));
+
+        // --- APPLY VELOCITY TO POSITION ---
+        x += velocityX;
+        y += velocityY;
+
+        // --- CLAMP TO BOUNDARIES ---
+        if (x < minX)         { x = minX;         velocityX = 0; }
+        if (x > maxX - width) { x = maxX - width; velocityX = 0; }
+        if (y < minY)         { y = minY;          velocityY = 0; }
+        if (y > maxY)         { y = maxY;          velocityY = 0; }
+
+        // --- SYNC SPRITE ---
         sprite.setX(x);
         sprite.setY(y);
     }
