@@ -5,40 +5,38 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
 /**
- * Represents the player character in the game.
- * Inherits position/size from GameObject and implements Collidable.
+ * Represents the player character in the Campus Craze game.
+ * Extends GameObject: inherits x, y, width, height and must implement update()
+ * Implements Collidable: must provide getBounds(), updatePosition(), onCollision()
+ * @author Deliwe Mufute
  */
 public class Player extends GameObject implements Collidable {
 
+    /** The visual representation of the player on screen */
     private ImageView sprite;
 
-    // Movement flags
-    private boolean movingLeft = false;
+    /** True while LEFT arrow key is held down */
+    private boolean movingLeft  = false;
+
+    /** True while RIGHT arrow key is held down */
     private boolean movingRight = false;
 
-    // Speed in pixels per frame
-    private double speed = 5;
+    /** Left road boundary — player cannot go left of this */
+    private final double minX;
 
-    // Screen boundaries
-    private double minX = 0;
-    private double maxX;
+    /** Right road boundary — player cannot go right of this */
+    private final double maxX;
 
-    // score manager reference to update lives on collision
+    /** Reference to ScoreManager — set by GameScene after construction */
     private ScoreManager scoreManager;
 
-    // Cooldown to prevent collision firing every frame for the same contact
-    private long lastBuildingCollisionTime = 0;
-    private static final long BUILDING_COLLISION_COOLDOWN_MS = 500; // half a second
-
     /**
-     * Constructs a new Player instance with specified sprite image, initial position,
-     * and road boundaries.
-     *
-     * @param spriteImage the image used for the player's sprite
-     * @param startX the initial X coordinate of the player's position
-     * @param startY the initial Y coordinate of the player's position
-     * @param roadLeft the left boundary of the road (minimum X position the player can occupy)
-     * @param roadRight the right boundary of the road (maximum X position the player can occupy)
+     * Creates a new Player at the given position within the road boundaries.
+     * @param spriteImage the image to display as the player character
+     * @param startX      starting X position
+     * @param startY      starting Y position
+     * @param roadLeft    left road boundary
+     * @param roadRight   right road boundary
      */
     public Player(Image spriteImage, double startX, double startY,
                   double roadLeft, double roadRight) {
@@ -47,100 +45,68 @@ public class Player extends GameObject implements Collidable {
         this.sprite.setX(startX);
         this.sprite.setY(startY);
         this.minX = roadLeft;
-        this.maxX = roadRight;   // updatePosition() already does maxX - width, so this is correct
-
+        this.maxX = roadRight;
         if (this.x < minX) this.x = minX;
         if (this.x + width > maxX) this.x = maxX - width;
         sprite.setX(this.x);
     }
 
-    // -------------------------------
-    // Movement controls
-    // -------------------------------
-    public void moveLeft() { movingLeft = true; }
-    public void moveRight() { movingRight = true; }
-    public void stopLeft() { movingLeft = false; }
+    /** Called when LEFT arrow key is pressed */
+    public void moveLeft()  { movingLeft  = true;  }
+
+    /** Called when RIGHT arrow key is pressed */
+    public void moveRight() { movingRight = true;  }
+
+    /** Called when LEFT arrow key is released */
+    public void stopLeft()  { movingLeft  = false; }
+
+    /** Called when RIGHT arrow key is released */
     public void stopRight() { movingRight = false; }
 
-    // -------------------------------
-    // Collidable / GameObject methods
-    // -------------------------------
-
+    /** Called every frame by GameScene polymorphically */
     @Override
-    public void update() {
-        // This is the abstract method from GameObject
-        updatePosition();
-    }
+    public void update() { updatePosition(); }
 
+    /** Updates position each frame — basic movement only for now */
     @Override
     public void updatePosition() {
-        if (movingLeft) x -= speed;
-        if (movingRight) x += speed;
-
-        // Clamp to screen boundaries
-        if (x < minX) x = minX;
-        if (x > maxX - width) x = maxX - width;
-
+        if (movingLeft)  x -= 5;
+        if (movingRight) x += 5;
+        if (x < minX)         { x = minX; }
+        if (x > maxX - width) { x = maxX - width; }
         sprite.setX(x);
         sprite.setY(y);
     }
 
+    /** Returns bounding box for collision detection */
     @Override
-    public Bounds getBounds() {
-        return sprite.getBoundsInParent();
-    }
+    public Bounds getBounds() { return sprite.getBoundsInParent(); }
 
-    // Road boundary getters — used by tests and collision snap logic
-    public double getRoadMinX() { return minX; }
-    public double getRoadMaxX() { return maxX; }
-
-    /**
-     * Handles the collision event when the player collides with another
-     * object in the game world. The specific collision behavior depends
-     * on the type of the other object:
-     * - If the collided object is an instance of {@code Obstacle}, the player
-     *   loses a life via the {@code ScoreManager}.
-     * - If the collided object is an instance of {@code BuildingTile},
-     *   the player snaps back to ensure they remain within road boundaries.
-     *
-     * @param other the {@code Collidable} object that this player collided
-     *              with. If {@code null}, no action is taken.
-     */
+    /** Handles collision response */
     @Override
     public void onCollision(Collidable other) {
         if (other == null) return;
-
+        System.out.println("Player collided with: " + other.getClass().getSimpleName());
         if (other instanceof Obstacle && scoreManager != null) {
             scoreManager.loseLife();
         }
-
-        // Snap to road boundary if colliding with a building
         if (other instanceof BuildingTile) {
-            long now = System.currentTimeMillis();
-            if (now - lastBuildingCollisionTime < BUILDING_COLLISION_COOLDOWN_MS) return;
-            lastBuildingCollisionTime = now;
-
-            // Only reaches here once per cooldown window
-            System.out.println("Player collided with: " + other.getClass().getSimpleName());
-
-
-            if (x < minX) {
-                x = minX;
-            } else if (x + width > maxX) {
-                x = maxX - width;
-            }
+            if (x < minX) { x = minX; }
+            else if (x + width > maxX) { x = maxX - width; }
             sprite.setX(x);
         }
     }
 
-    // -------------------------------
-    // Getter for sprite
-    // -------------------------------
-    public ImageView getSprite() {
-        return sprite;
-    }
+    /** Returns the player sprite */
+    public ImageView getSprite()  { return sprite; }
 
-    // it lets GameScene pass in the score manager
+    /** Returns left road boundary */
+    public double getRoadMinX()   { return minX;   }
+
+    /** Returns right road boundary */
+    public double getRoadMaxX()   { return maxX;   }
+
+    /** Injects ScoreManager so Player can trigger loseLife() */
     public void setScoreManager(ScoreManager scoreManager) {
         this.scoreManager = scoreManager;
     }
