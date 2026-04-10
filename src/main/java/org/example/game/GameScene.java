@@ -8,23 +8,17 @@ import javafx.scene.layout.Pane;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Manages the gameplay screen.
- * Integrates SceneryManager for vertical background scrolling,
- * runs the main game loop, and stores all GameObjects in a list.
- *
- * Milestone 2 Architecture: uses GameObject parent class
- * and Collidable interface where applicable.
- */
-
 public class GameScene {
 
-    // -------------------------------------------------------
-    // Constants
-    // -------------------------------------------------------
-
-    private static final double SCROLL_SPEED = 3.0;   // pixels per frame
-    private static final int TILE_COUNT = 3;          // tiles needed to fill screen
+    // --- Constants ---
+    private final double screenWidth;
+    private final double screenHeight;
+    // Road boundaries: inner edge of city building overlay tiles (measured empirically).
+    // Left building ends at x=170, right building starts at x=850.
+    // Update these if overlay tile assets change width.
+    private static final double ROAD_LEFT_X  = 130.0; // Playable area
+    private static final double ROAD_RIGHT_X = 890.0; // Playable area
+    private static final double SCROLL_SPEED = 3.0;
 
     private static final double TILE_H       = 320.0;  // actual tile height from assets
 
@@ -43,15 +37,50 @@ public class GameScene {
     private ObstacleManager obstacleManager;
     private SceneryManager sceneryManager;
     private HUDManager hudManager;
-    private ScoreManager       scoreManager;
-    // collision visual effects
-    private CollisionFeedback collisionFeedback;
+    private ScoreManager scoreManager;
 
     // --- Centralized game object list ---
     private final List<GameObject> gameObjects = new ArrayList<>();
 
     // --- Game loop ---
     private AnimationTimer gameLoop;
+    private long lastScoreTime = 0;
+
+    // --- Theme assets ---
+    // City (opening theme — no dummy tiles in production)
+    private Image cityStart;
+    private Image[] cityMids;
+    private Image cityTop;
+
+    // Park
+    private Image parkStart;
+    private Image[] parkMids;
+    private Image parkTop;
+
+    // Subway
+    private Image subwayStart;
+    private Image[] subwayMids;
+    private Image subwayTop;
+
+    // --- Theme transition flags ---
+    private boolean switchedToPark   = false;
+    private boolean switchedToSubway = false;
+
+    // --- Overlay assets ---
+    // Left and right building column images used for all themes.
+    // Park and subway use city overlays as placeholders until their own assets are added.
+    private Image[] overlayLeftVariants;
+    private Image[] overlayRightVariants;
+
+    // Minimum road tiles to skip between building spawns — prevents clustering.
+    private static final int OVERLAY_MIN_GAP = 2;
+
+    // Approximate probability of spawning a building on an eligible tile (1 in N).
+    private static final int OVERLAY_SPAWN_CHANCE = 3;
+
+    // Maps each road tile to its paired [leftBuilding, rightBuilding], or null if no building.
+    // Used on recycle to know whether to show a building on a given tile slot.
+    private final java.util.Map<SceneryTile, BuildingTile[]> overlayMap = new java.util.HashMap<>();
 
     // timing
     private long   gameStartNano  = 0;
@@ -63,8 +92,8 @@ public class GameScene {
     // Constructor
     // ===============================
     public GameScene(Pane pane, double width, double height) {
-        this.gamePane = pane;
-        this.screenWidth = width;
+        this.gamePane     = pane;
+        this.screenWidth  = width;
         this.screenHeight = height;
     }
 
@@ -80,80 +109,179 @@ public class GameScene {
     }
 
     private void setupScenery() {
-        Image[] variants = loadSceneryVariants();
-        // +2 buffer tiles so there's never a gap while recycling
-        int tileCount = (int) Math.ceil(screenHeight / TILE_H) + 2;
+        // --- Load city tiles (opening theme) ---
+        cityStart = new Image(getClass().getResourceAsStream("/Tiles/city_tile_start.jpg"));
+        cityMids  = new Image[]{
+                new Image(getClass().getResourceAsStream("/Tiles/city_tile_mid_1.jpg")),
+                new Image(getClass().getResourceAsStream("/Tiles/city_tile_mid_2.jpg")),
+                new Image(getClass().getResourceAsStream("/Tiles/city_tile_mid_3.jpg")),
+                new Image(getClass().getResourceAsStream("/Tiles/city_tile_mid_4.jpg"))
+        };
+        cityTop = new Image(getClass().getResourceAsStream("/Tiles/city_tile_top.jpg"));
 
+        // --- Load park tiles ---
+        parkStart = new Image(getClass().getResourceAsStream("/Tiles/park_tile_start.jpg"));
+        parkMids  = new Image[]{
+                new Image(getClass().getResourceAsStream("/Tiles/park_tile_mid_1.jpg")),
+                new Image(getClass().getResourceAsStream("/Tiles/park_tile_mid_2.jpg")),
+                new Image(getClass().getResourceAsStream("/Tiles/park_tile_mid_3.jpg")),
+                new Image(getClass().getResourceAsStream("/Tiles/park_tile_mid_4.jpg"))
+        };
+        parkTop = new Image(getClass().getResourceAsStream("/Tiles/park_tile_top.jpg"));
+
+        // --- Load subway tiles ---
+        subwayStart = new Image(getClass().getResourceAsStream("/Tiles/subway_tile_start.jpg"));
+        subwayMids  = new Image[]{
+                new Image(getClass().getResourceAsStream("/Tiles/subway_tile_mid_1.jpg")),
+                new Image(getClass().getResourceAsStream("/Tiles/subway_tile_mid_2.jpg")),
+                new Image(getClass().getResourceAsStream("/Tiles/subway_tile_mid_3.jpg")),
+                new Image(getClass().getResourceAsStream("/Tiles/subway_tile_mid_4.jpg"))
+        };
+        subwayTop = new Image(getClass().getResourceAsStream("/Tiles/subway_tile_top.jpg"));
+
+        // --- Load overlay assets (city used as placeholder for all themes) ---
+        overlayLeftVariants = new Image[]{
+                new Image(getClass().getResourceAsStream("/Tiles/city_overlay_left_1.png")),
+                new Image(getClass().getResourceAsStream("/Tiles/city_overlay_left_2.png")),
+                new Image(getClass().getResourceAsStream("/Tiles/city_overlay_left_3.png"))
+        };
+        overlayRightVariants = new Image[]{
+                new Image(getClass().getResourceAsStream("/Tiles/city_overlay_right_1.png")),
+                new Image(getClass().getResourceAsStream("/Tiles/city_overlay_right_2.png")),
+                new Image(getClass().getResourceAsStream("/Tiles/city_overlay_right_3.png"))
+        };
+
+        // --- Set up SceneryManager with shuffled city mids as the rolling pool ---
         sceneryManager = new SceneryManager(gamePane, SCROLL_SPEED, screenHeight, screenWidth);
-        sceneryManager.setSceneryVariants(variants);
+        sceneryManager.setSceneryVariants(cityMids); // shuffled mids are the default pool
 
-        for (int i = 0; i < tileCount; i++) {
-            SceneryTile tile = sceneryManager.spawnTile(-TILE_H + i * TILE_H);
+        // --- Spawn initial tiles: tile[0] = cityStart, rest = shuffled mids ---
+        // Use cityStart height as the reference tile size
+        double tileHeight = cityStart.getHeight();
+        int tilesNeeded = (int) Math.ceil(screenHeight / tileHeight) + 1;
+
+        // Tiles scroll downward — the player sees the bottom of the screen first.
+        // cityStart goes on the last tile (highest Y, closest to the player) and
+        // shuffled mids fill everything above it.
+        for (int i = 0; i < tilesNeeded; i++) {
+            double yPos = i * tileHeight;
+            SceneryTile tile;
+            if (i == tilesNeeded - 1) {
+                // Last tile sits at the bottom — this is what the player sees first
+                tile = sceneryManager.spawnTileWithImage(cityStart, yPos);
+            } else {
+                // Everything above is shuffled mids (scroll into view after start)
+                tile = sceneryManager.spawnTile(yPos);
+            }
             gameObjects.add(tile);
         }
-        System.out.println("GameScene: " + tileCount + " tiles spawned (h=" + TILE_H + ").");
+        // --- Spawn building overlays sparsely across the initial road tiles ---
+        setupOverlays(tileHeight);
+
+        System.out.println("GameScene: city scenery tiles spawned (shuffled mids + start at bottom).");
     }
 
     /**
-     * Loads real JPG tiles grouped: city → park → subway.
-     * Falls back to dummy_tile_mid_1.png for any missing asset.
+     * Configures overlay tiles (such as buildings) on the scrolling road scenery.
+     * This method places pairs of overlay tiles at specific positions on the road,
+     * ensuring minimum spacing between overlays and using randomized placement logic.
+     *
+     * @param tileHeight the height of the scenery tiles in the game, used to vertically position the overlays
      */
-    private Image[] loadSceneryVariants() {
-        String[] paths = {
-                // city
-                "/Tiles/city_tile_start.jpg",
-                "/Tiles/city_tile_mid_1.jpg", "/Tiles/city_tile_mid_2.jpg",
-                "/Tiles/city_tile_mid_3.jpg", "/Tiles/city_tile_mid_4.jpg",
-                "/Tiles/city_tile_top.jpg",
-                // park
-                "/Tiles/park_tile_start.jpg",
-                "/Tiles/park_tile_mid_1.jpg", "/Tiles/park_tile_mid_2.jpg",
-                "/Tiles/park_tile_mid_3.jpg", "/Tiles/park_tile_mid_4.jpg",
-                "/Tiles/park_tile_top.jpg",
-                // subway
-                "/Tiles/subway_tile_start.jpg",
-                "/Tiles/subway_tile_mid_1.jpg", "/Tiles/subway_tile_mid_2.jpg",
-                "/Tiles/subway_tile_mid_3.jpg", "/Tiles/subway_tile_mid_4.jpg",
-                "/Tiles/subway_tile_top.jpg"
-        };
-        Image fallback = new Image(
-                getClass().getResourceAsStream("/Tiles/dummy_tile_mid_1.png"));
-        Image[] out = new Image[paths.length];
-        for (int i = 0; i < paths.length; i++) {
-            try {
-                var s = getClass().getResourceAsStream(paths[i]);
-                out[i] = (s != null) ? new Image(s) : fallback;
-            } catch (Exception e) { out[i] = fallback; }
+    private void setupOverlays(double tileHeight) {
+        java.util.List<SceneryTile> roadTiles = sceneryManager.getTiles();
+        java.util.Random rng = new java.util.Random();
+
+        int skipRemaining  = 0;
+        int overlayIndex   = 0;
+        boolean firstSpawned = false;  // guarantee at least one building
+
+        for (SceneryTile roadTile : roadTiles) {
+            // Start tile never gets a building
+            if (roadTile.getSprite().getImage() == cityStart) {
+                overlayMap.put(roadTile, null);
+                continue;
+            }
+
+            // Enforce minimum gap after previous spawn
+            if (skipRemaining > 0) {
+                overlayMap.put(roadTile, null);
+                skipRemaining--;
+                continue;
+            }
+
+            // Always spawn on the first eligible tile, then use random chance thereafter
+            boolean spawn = !firstSpawned || rng.nextInt(OVERLAY_SPAWN_CHANCE) == 0;
+            if (!spawn) {
+                overlayMap.put(roadTile, null);
+                continue;
+            }
+
+            // Spawn a building pair for this tile slot
+            Image leftImage  = overlayLeftVariants[overlayIndex % overlayLeftVariants.length];
+            Image rightImage = overlayRightVariants[overlayIndex % overlayRightVariants.length];
+            overlayIndex++;
+
+            double yPos   = roadTile.getY();
+            double rightX = screenWidth - rightImage.getWidth();
+
+            BuildingTile leftBuilding  = new BuildingTile(leftImage,  0,      yPos, SCROLL_SPEED);
+            BuildingTile rightBuilding = new BuildingTile(rightImage, rightX, yPos, SCROLL_SPEED);
+
+            // Add sprites to the pane so they render
+            gamePane.getChildren().add(leftBuilding.getSprite());
+            gamePane.getChildren().add(rightBuilding.getSprite());
+
+            // Register with SceneryManager so they scroll and recycle with the road
+            sceneryManager.registerOverlayTile(leftBuilding);
+            sceneryManager.registerOverlayTile(rightBuilding);
+
+            // Register in gameObjects for collision detection
+            gameObjects.add(leftBuilding);
+            gameObjects.add(rightBuilding);
+
+            overlayMap.put(roadTile, new BuildingTile[]{leftBuilding, rightBuilding});
+
+            firstSpawned  = true;
+            skipRemaining = OVERLAY_MIN_GAP;
         }
-        return out;
+
+        System.out.println("GameScene: building overlays spawned. Slots with buildings: "
+                + overlayMap.values().stream().filter(v -> v != null).count());
     }
 
     private void setupPlayer() {
-        Image img = new Image(getClass().getResourceAsStream("/Player/player_dummy.png"));
-        // x = LEFT EDGE; screenWidth/2 places the player visually centred
-        player = new Player(img, screenWidth / 2, screenHeight - 320, screenWidth);
+        Image playerImage = new Image(getClass().getResourceAsStream("/Player/player_dummy.png"));
+        player = new Player(playerImage,
+                screenWidth / 2,
+                screenHeight - 150,
+                ROAD_LEFT_X,
+                ROAD_RIGHT_X);
         gamePane.getChildren().add(player.getSprite());
         gameObjects.add(player);
     }
 
     private void setupObstacles() {
         obstacleManager = new ObstacleManager(gamePane);
-        List<GameObject> spawned = obstacleManager.spawnInitialObjects();
-        gameObjects.addAll(spawned);
-        System.out.println("GameScene: " + spawned.size() + " obstacles/coins spawned.");
+
+        Obstacle o1 = obstacleManager.spawnObstacle(380, 150);
+        Obstacle o2 = obstacleManager.spawnObstacle(512, -100);
+        Obstacle o3 = obstacleManager.spawnObstacle(640, -350);
+
+        gameObjects.add(o1);
+        gameObjects.add(o2);
+        gameObjects.add(o3);
+
+        System.out.println("GameScene: dummy obstacles spawned.");
     }
 
     private void setupHUD() {
-        hudManager = new HUDManager(gamePane);
+        hudManager   = new HUDManager(gamePane);
         hudManager.setupHUD();
-
         scoreManager = new ScoreManager(hudManager);
-        player.setScoreManager(scoreManager);
 
-        /// CollisionFeedback must be created last so its flash rects
-        // sit on top of HUD labels in the z-order
-        collisionFeedback = new CollisionFeedback(gamePane, screenWidth, screenHeight);
-        obstacleManager.setFeedback(collisionFeedback);
+        // Give the player a reference to ScoreManager so it can lose lives on collision
+        player.setScoreManager(scoreManager);
     }
 
     // ===============================
@@ -178,6 +306,13 @@ public class GameScene {
                 }
 
                 update();
+
+                // Increment score once per second (now is in nanoseconds)
+                if (lastScoreTime == 0) lastScoreTime = now;
+                if (now - lastScoreTime >= 1_000_000_000L) {
+                    scoreManager.incrementScore();
+                    lastScoreTime = now;
+                }
             }
         };
         gameLoop.start();
@@ -191,50 +326,54 @@ public class GameScene {
     public void setupKeyboard(Scene scene) {
         scene.setOnKeyPressed(e -> {
             if (player == null) return;
-
             switch (e.getCode()) {
-                case LEFT -> player.moveLeft();
+                case LEFT  -> player.moveLeft();
                 case RIGHT -> player.moveRight();
+                case UP    -> player.moveUp();
+                case DOWN  -> player.moveDown();
             }
         });
 
         scene.setOnKeyReleased(e -> {
             if (player == null) return;
-
             switch (e.getCode()) {
-                case LEFT -> player.stopLeft();
+                case LEFT  -> player.stopLeft();
                 case RIGHT -> player.stopRight();
+                case UP    -> player.stopUp();
+                case DOWN  -> player.stopDown();
+
             }
         });
     }
 
-// ===============================
-// Update / Frame Handling
-// ===============================
+    // ===============================
+    // Update / Frame Handling
+    // ===============================
     public void update() {
-        // -------------------------------
-        // Polymorphic update for all game objects
-        // -------------------------------
-        // 1. Tell ObstacleManager how many seconds have passed
-        //    — it uses this for theme switching and difficulty ramp
-        obstacleManager.setElapsedSeconds(elapsedSeconds);
+        // --- Theme transition checks ---
+        // City is the opening theme. Transitions fire on score milestones.
+        // switchTheme(outgoingTop, incomingStart, incomingMids) — the outgoing
+        // top tile plays once on the next recycle before the new start tile appears.
+        int score = scoreManager.getScore();
 
-        // 2. Polymorphic update for all GameObjects (movement, sync)
+        if (!switchedToPark && score >= 100) {
+            switchedToPark = true;
+            sceneryManager.switchTheme(cityTop, parkStart, parkMids);
+        } else if (!switchedToSubway && score >= 200) {
+            switchedToSubway = true;
+            sceneryManager.switchTheme(parkTop, subwayStart, subwayMids);
+        }
+
+        // Scroll and recycle scenery
+        sceneryManager.update();
+
+        // Polymorphic update for non-scenery objects only
         for (GameObject obj : gameObjects) {
+            if (obj instanceof SceneryTile) continue;
             obj.update();
         }
 
-        // 3. Scenery tile scrolling + recycling
-        sceneryManager.scrollTiles();
-
-        // 4. Obstacle + coin scrolling, respawning, coin patterns, difficulty
-        obstacleManager.scrollObstacles(screenHeight);
-
-        // 5. Collision detection — manual BoundingBox, works from frame 1
-        obstacleManager.checkCollisions(player);
-
-        // 6. Generic Collidable loop for future pairs (BuildingTile etc.)
-        //    Guard prevents double-firing obstacle/coin hits
+        // --- Collision detection ---
         for (int i = 0; i < gameObjects.size(); i++) {
             if (!(gameObjects.get(i) instanceof Collidable)) continue;
             for (int j = i + 1; j < gameObjects.size(); j++) {
@@ -242,9 +381,15 @@ public class GameScene {
                 if (isManagedPair(gameObjects.get(i), gameObjects.get(j))) continue;
                 Collidable c1 = (Collidable) gameObjects.get(i);
                 Collidable c2 = (Collidable) gameObjects.get(j);
+
                 if (c1.getBounds().intersects(c2.getBounds())) {
                     c1.onCollision(c2);
                     c2.onCollision(c1);
+
+                    if ((gameObjects.get(i) instanceof Player && gameObjects.get(j) instanceof Obstacle)
+                            || (gameObjects.get(j) instanceof Player && gameObjects.get(i) instanceof Obstacle)) {
+                        scoreManager.loseLife();
+                    }
                 }
             }
         }
@@ -262,20 +407,21 @@ public class GameScene {
     // ===============================
     // Getters
     // ===============================
-    public Pane getGamePane() {
-        return gamePane;
+    public Pane getGamePane()               { return gamePane; }
+    public Player getPlayer()               { return player; }
+    public SceneryManager getSceneryManager() { return sceneryManager; }
+    public List<GameObject> getGameObjects() { return gameObjects; }
+
+    // ===============================
+    // Setters
+    // ===============================
+    // Used by tests to inject a dummy ScoreManager and SceneryManager
+    void setScoreManager(ScoreManager scoreManager) {
+        this.scoreManager = scoreManager;
     }
 
-    public Player getPlayer() {
-        return player;
-    }
-
-    public SceneryManager getSceneryManager() {
-        return sceneryManager;
-    }
-
-    public List<GameObject> getGameObjects() {
-        return gameObjects;
+    void setSceneryManager(SceneryManager sceneryManager) {
+        this.sceneryManager = sceneryManager;
     }
 
     public ObstacleManager  getObstacleManager() {
