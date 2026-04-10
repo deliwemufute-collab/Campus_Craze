@@ -34,6 +34,29 @@ public class Player extends GameObject implements Collidable {
 
     /** Reference to ScoreManager — set by GameScene after construction */
     private ScoreManager scoreManager;
+    /** Current horizontal speed — builds up and slows down smoothly */
+    private double velocityX = 0;
+
+    /** Current vertical speed — kept small for slight forward/backward movement */
+    private double velocityY = 0;
+
+    /** How fast velocity builds each frame when key is held */
+    private static final double ACCELERATION = 1.0;
+
+    /** Friction factor — velocity shrinks by 15% each frame when key released */
+    private static final double DECELERATION = 0.85;
+
+    /** Maximum horizontal speed */
+    private static final double MAX_SPEED_X  = 6.0;
+
+    /** Maximum vertical speed — smaller than X to keep movement slight */
+    private static final double MAX_SPEED_Y  = 3.0;
+
+    /** Top boundary — how far forward player can move */
+    private double minY;
+
+    /** Bottom boundary — how far backward player can move */
+    private double maxY;
 
     /**
      * Creates a new Player at the given position within the road boundaries.
@@ -54,6 +77,8 @@ public class Player extends GameObject implements Collidable {
         if (this.x < minX) this.x = minX;
         if (this.x + width > maxX) this.x = maxX - width;
         sprite.setX(this.x);
+        this.minY = startY - 80;
+        this.maxY = startY + 40;
     }
 
     /** Called when LEFT arrow key is pressed */
