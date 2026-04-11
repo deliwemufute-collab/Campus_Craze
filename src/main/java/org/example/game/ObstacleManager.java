@@ -41,8 +41,11 @@ import java.util.*;
  */
 public class ObstacleManager {
 
+    private ScoreManager scoreManager;
+
     // ── Speeds ─────────────────────────────────────────────────────────────
-    private static final double BASE_SPEED       = 3.0;
+    private double baseScrollSpeed;
+    private double scrollSpeed;
     private static final double MAX_SPEED        = 7.5;
     private static final double SPEED_INCREMENT  = 0.25;
     private static final double ONCOMING_SPEED   = 4.0;  // city/park large UP
@@ -69,9 +72,8 @@ public class ObstacleManager {
     private final List<Coin>     coins     = new ArrayList<>();
 
     private final Pane   gamePane;
-    private final Random random = new Random();
+    private final Random random = new Random(1);
 
-    private double scrollSpeed    = BASE_SPEED;
     private int    diffLevel      = 0;
     private double elapsedSeconds = 0;
     private double lastCoinDrop   = 0;
@@ -96,6 +98,8 @@ public class ObstacleManager {
     /** Production — loads real PNGs from /resources. */
     public ObstacleManager(Pane gamePane) {
         this.gamePane = gamePane;
+        this.baseScrollSpeed = baseScrollSpeed;
+        this.scrollSpeed = baseScrollSpeed;
         loadAllSprites();
         Image first = spriteMap.values().stream().findFirst().orElse(blank(48, 60));
         coinImage       = loadRes("/Obstacles/coin.gif", first);
@@ -176,6 +180,9 @@ public class ObstacleManager {
      * Size weighted: 50 % small, 30 % medium, 20 % large.
      */
     public Obstacle spawnObstacle(double centreX, double startY) {
+        System.out.println("SPAWNING OBSTACLE:");
+        System.out.println("  centreX = " + centreX);
+        System.out.println("  startY  = " + startY);
         Obstacle.Size size    = randomSize();
         int           variant = random.nextInt(2) + 1;
         String        key     = key(currentTheme, size, variant);
@@ -272,6 +279,7 @@ public class ObstacleManager {
 
     /** Scroll all objects, respawn offscreen ones, ramp difficulty, drop coins. */
     public void scrollObstacles(double screenHeight) {
+        System.out.println("scrolling obstacles: " + obstacles.size()); // Debugging
         applyDifficulty();
         maybeDropCoinPattern();
 
@@ -387,7 +395,7 @@ public class ObstacleManager {
         int newLevel = (int) (elapsedSeconds / DIFFICULTY_INTERVAL);
         if (newLevel > diffLevel) {
             diffLevel   = newLevel;
-            scrollSpeed = Math.min(BASE_SPEED + diffLevel * SPEED_INCREMENT, MAX_SPEED);
+            scrollSpeed = Math.min(baseScrollSpeed + diffLevel * SPEED_INCREMENT, MAX_SPEED);
             if (obstacles.size() < MAX_OBSTACLES) {
                 double lane = LANES[random.nextInt(LANES.length)];
                 double y    = -300 - random.nextDouble() * 500;
@@ -599,4 +607,9 @@ public class ObstacleManager {
     public List<Coin>     getCoins()           { return coins; }
     public double         getScrollSpeed()     { return scrollSpeed; }
     public int            getDifficultyLevel() { return diffLevel; }
+
+    // ── Setters ────────────────────────────────────────────────────────────
+    public void setScoreManager(ScoreManager scoreManager) {
+        this.scoreManager = scoreManager;
+    }
 }

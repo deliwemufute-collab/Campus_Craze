@@ -1,6 +1,6 @@
 package org.example.game;
 
-import com.sun.javafx.application.PlatformImpl;
+import javafx.application.Platform;
 import javafx.scene.image.Image;
 import javafx.scene.layout.Pane;
 import org.junit.jupiter.api.*;
@@ -24,8 +24,11 @@ public class SceneryManagerTest {
     private Image[] altVariants;
 
     @BeforeAll
-    static void initToolkit() throws Exception {
-        PlatformImpl.startup(() -> {});
+    static void initToolkit() {
+        try {
+            Platform.startup(() -> {});
+        } catch (IllegalStateException ignored) {
+        }
     }
 
     @BeforeEach

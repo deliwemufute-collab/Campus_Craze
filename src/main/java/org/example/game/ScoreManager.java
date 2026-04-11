@@ -44,10 +44,8 @@ public class ScoreManager {
 
     // when player hits an obstacle lives decrease
     public void loseLife() {
-        if (lives > 0) {
-            lives--;
-            hudManager.updateLives(lives);
-        }
+        lives = Math.max(0, lives - 1);
+        hudManager.updateLives(lives);
     }
 
     // getters for testing

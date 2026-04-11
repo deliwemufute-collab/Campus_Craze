@@ -22,13 +22,6 @@ public class GameScene {
 
     private static final double TILE_H       = 320.0;  // actual tile height from assets
 
-    // -------------------------------------------------------
-    // Fields
-    // -------------------------------------------------------
-
-    private final double screenWidth;
-    private final double screenHeight;
-
     // --- Core pane ---
     private final Pane gamePane;
 
@@ -87,6 +80,9 @@ public class GameScene {
     private double elapsedSeconds = 0;
     private long   lastScoreNano  = 0;
 
+    //Collision Feedback
+    private CollisionFeedback feedback;
+
 
     // ===============================
     // Constructor
@@ -104,8 +100,9 @@ public class GameScene {
     public void initializeGameObjects() {
         setupScenery();
         setupPlayer();
-        setupObstacles();
         setupHUD();
+        setupObstacles();
+
     }
 
     private void setupScenery() {
@@ -257,6 +254,7 @@ public class GameScene {
                 screenHeight - 150,
                 ROAD_LEFT_X,
                 ROAD_RIGHT_X);
+        player.setScoreManager(scoreManager);
         gamePane.getChildren().add(player.getSprite());
         gameObjects.add(player);
     }
@@ -264,24 +262,40 @@ public class GameScene {
     private void setupObstacles() {
         obstacleManager = new ObstacleManager(gamePane);
 
-        Obstacle o1 = obstacleManager.spawnObstacle(380, 150);
-        Obstacle o2 = obstacleManager.spawnObstacle(512, -100);
-        Obstacle o3 = obstacleManager.spawnObstacle(640, -350);
+        if (scoreManager == null) {
+            throw new IllegalStateException("ScoreManager not initialized before obstacles");
+        }
 
-        gameObjects.add(o1);
-        gameObjects.add(o2);
-        gameObjects.add(o3);
+        obstacleManager.setScoreManager(scoreManager);
+        obstacleManager.setFeedback(feedback);
 
-        System.out.println("GameScene: dummy obstacles spawned.");
+        if (feedback == null) {
+            System.out.println("WARNING: feedback is null (screen shake disabled)");
+        }
+
+        List<GameObject> spawned = obstacleManager.spawnInitialObjects();
+        gameObjects.addAll(spawned);
+
+        System.out.println("GameScene: obstacles spawned via manager.");
+
+        System.out.println("Spawned objects:");
+        for (GameObject g : spawned) {
+            System.out.println(g.getClass().getSimpleName());
+        }
     }
 
     private void setupHUD() {
         hudManager   = new HUDManager(gamePane);
         hudManager.setupHUD();
+
         scoreManager = new ScoreManager(hudManager);
 
-        // Give the player a reference to ScoreManager so it can lose lives on collision
         player.setScoreManager(scoreManager);
+
+        // if obstacleManager already exists, re-inject
+        if (obstacleManager != null) {
+            obstacleManager.setScoreManager(scoreManager);
+        }
     }
 
     // ===============================
@@ -354,6 +368,7 @@ public class GameScene {
         // City is the opening theme. Transitions fire on score milestones.
         // switchTheme(outgoingTop, incomingStart, incomingMids) — the outgoing
         // top tile plays once on the next recycle before the new start tile appears.
+
         int score = scoreManager.getScore();
 
         if (!switchedToPark && score >= 100) {
@@ -373,22 +388,49 @@ public class GameScene {
             obj.update();
         }
 
+        obstacleManager.scrollObstacles(screenHeight);
+
+        double newSpeed = obstacleManager.getScrollSpeed();
+
+        // Update ALL scenery tiles
+        for (GameObject obj : gameObjects) {
+            if (obj instanceof SceneryTile tile) {
+                tile.setScrollSpeed(newSpeed);
+            }
+        }
+
         // --- Collision detection ---
         for (int i = 0; i < gameObjects.size(); i++) {
             if (!(gameObjects.get(i) instanceof Collidable)) continue;
+
             for (int j = i + 1; j < gameObjects.size(); j++) {
                 if (!(gameObjects.get(j) instanceof Collidable)) continue;
+
                 if (isManagedPair(gameObjects.get(i), gameObjects.get(j))) continue;
+
                 Collidable c1 = (Collidable) gameObjects.get(i);
                 Collidable c2 = (Collidable) gameObjects.get(j);
 
                 if (c1.getBounds().intersects(c2.getBounds())) {
+
+                    System.out.println("COLLISION: "
+                            + c1.getClass().getSimpleName()
+                            + " <-> "
+                            + c2.getClass().getSimpleName());
+
                     c1.onCollision(c2);
                     c2.onCollision(c1);
 
-                    if ((gameObjects.get(i) instanceof Player && gameObjects.get(j) instanceof Obstacle)
-                            || (gameObjects.get(j) instanceof Player && gameObjects.get(i) instanceof Obstacle)) {
-                        scoreManager.loseLife();
+                    if ((c1 instanceof Player && c2 instanceof Obstacle) ||
+                            (c2 instanceof Player && c1 instanceof Obstacle)) {
+
+                        System.out.println("PLAYER vs OBSTACLE CHECK");
+
+                        System.out.println("Player bounds: " +
+                                (c1 instanceof Player ? c1.getBounds() : c2.getBounds()));
+
+                        System.out.println("Obstacle bounds: " +
+                                (c1 instanceof Obstacle ? c1.getBounds() : c2.getBounds()));
                     }
                 }
             }
@@ -397,11 +439,14 @@ public class GameScene {
 
     /** True for pairs already handled by ObstacleManager — prevents double collision. */
     private boolean isManagedPair(GameObject a, GameObject b) {
-        boolean aM = a instanceof Obstacle || a instanceof Coin;
-        boolean bM = b instanceof Obstacle || b instanceof Coin;
-        boolean aP = a instanceof Player;
-        boolean bP = b instanceof Player;
-        return (aM && bP) || (aP && bM);
+
+        // Ignore Obstacle <-> Coin collisions
+        if ((a instanceof Obstacle && b instanceof Coin) ||
+                (a instanceof Coin && b instanceof Obstacle)) {
+            return true;
+        }
+
+        return false;
     }
 
     // ===============================
@@ -424,8 +469,16 @@ public class GameScene {
         this.sceneryManager = sceneryManager;
     }
 
+    public void setObstacleManager(ObstacleManager manager) {
+        this.obstacleManager = obstacleManager;
+    }
+
     public ObstacleManager  getObstacleManager() {
         return obstacleManager;
+    }
+
+    public void setFeedback(CollisionFeedback feedback) {
+        this.feedback = feedback;
     }
 
 }

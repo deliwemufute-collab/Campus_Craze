@@ -94,20 +94,23 @@ public class Obstacle extends GameObject implements Collidable {
 
     // ── GameObject ─────────────────────────────────────────────────────────
 
-    @Override public void update()          { updatePosition(); }
+    @Override
+    public void update() {
+        scrollDown(3.0);
+        updatePosition();
+    }
     @Override public void updatePosition()  { syncSprite(); }
 
     // ── Collidable ─────────────────────────────────────────────────────────
 
     @Override
     public Bounds getBounds() {
-        double inX = width  * 0.10;
-        double inY = height * 0.10;
         return new BoundingBox(
-                x - width / 2 + inX,
-                y             + inY,
-                width  - inX * 2,
-                height - inY * 2);
+                x,
+                y,
+                width,
+                height
+        );
     }
 
     @Override
@@ -154,7 +157,7 @@ public class Obstacle extends GameObject implements Collidable {
     // ── Helper ─────────────────────────────────────────────────────────────
 
     private void syncSprite() {
-        sprite.setX(x - width / 2);
+        sprite.setX(x);
         sprite.setY(y);
     }
 

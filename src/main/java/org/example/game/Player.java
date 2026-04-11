@@ -14,6 +14,9 @@ import javafx.scene.image.ImageView;
 
 public class Player extends GameObject implements Collidable {
 
+    private long lastObstacleCollisionTime = 0;
+    private static final long OBSTACLE_COLLISION_COOLDOWN_MS = 1000;
+    // 1 second
     /** The visual representation of the player on screen */
     private ImageView sprite;
 
@@ -63,10 +66,6 @@ public class Player extends GameObject implements Collidable {
     // Cooldown to prevent collision firing every frame for the same contact
     private long lastBuildingCollisionTime = 0;
     private static final long BUILDING_COLLISION_COOLDOWN_MS = 500; // half a second
-
-
-    // score manager reference to update lives on collision
-    private ScoreManager scoreManager;
 
     /**
      * Creates a new Player at the given position within the road boundaries.
@@ -162,27 +161,46 @@ public class Player extends GameObject implements Collidable {
         if (y > maxY)         { y = maxY;          velocityY = 0; }
 
         // --- SYNC SPRITE ---
-        sprite.setX(x);
+        sprite.setX(x - width / 2);
         sprite.setY(y);
     }
 
     /** Returns bounding box for collision detection */
     @Override
-    public Bounds getBounds() { return sprite.getBoundsInParent(); }
+    public Bounds getBounds() {
+        return new BoundingBox(
+                x,
+                y,
+                width,
+                height
+        );
+    }
 
     /** Handles collision response */
     @Override
     public void onCollision(Collidable other) {
         if (other == null) return;
+
         if (other instanceof Obstacle && scoreManager != null) {
+
+            long now = System.currentTimeMillis();
+
+            if (now - lastObstacleCollisionTime < OBSTACLE_COLLISION_COOLDOWN_MS) {
+                return;
+            }
+
+            lastObstacleCollisionTime = now;
+
+            System.out.println("PLAYER HIT OBSTACLE → lose life");
+
             scoreManager.loseLife();
         }
+
         if (other instanceof BuildingTile) {
             long now = System.currentTimeMillis();
             if (now - lastBuildingCollisionTime < BUILDING_COLLISION_COOLDOWN_MS) return;
             lastBuildingCollisionTime = now;
 
-            // Only reaches here once per cooldown window
             System.out.println("Player collided with: " + other.getClass().getSimpleName());
 
             if (x < minX) {
@@ -219,10 +237,6 @@ public class Player extends GameObject implements Collidable {
     }
 
     /** Injects ScoreManager so Player can trigger loseLife() */
-    public void setScoreManager(ScoreManager scoreManager) {
-        this.scoreManager = scoreManager;
-    }
-
     // it lets GameScene pass in the score manager
     public void setScoreManager(ScoreManager scoreManager) {
         this.scoreManager = scoreManager;

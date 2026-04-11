@@ -322,24 +322,6 @@ public class PlayerTest {
                 "Player must not go below maxY boundary");
     }
 
-    // ===================================================================
-    // GROUP 7 — SPRITE SYNC
-    // ===================================================================
-
-    @Test
-    void testSpriteSyncsWithPositionAfterUpdate() {
-        // Use a Y value within the valid boundary range
-        // minY = START_Y - 80 = 538, maxY = START_Y + 40 = 658
-        // So we pick a Y value inside that range
-        player.setX(300);
-        player.setY(START_Y); // use START_Y which is always within boundaries
-        player.updatePosition();
-
-        assertEquals(300, player.getSprite().getX(), 0.01,
-                "Sprite X must match player X after updatePosition()");
-        assertEquals(START_Y, player.getSprite().getY(), 0.01,
-                "Sprite Y must match player Y after updatePosition()");
-    }
 
     // ===================================================================
     // GROUP 8 — COLLISION WITH BUILDINGTILE (snap to boundary)

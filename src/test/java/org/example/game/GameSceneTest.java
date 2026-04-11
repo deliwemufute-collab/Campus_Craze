@@ -2,9 +2,12 @@ package org.example.game;
 
 import com.sun.javafx.application.PlatformImpl;
 import javafx.scene.image.Image;
+import javafx.scene.image.WritableImage;
 import javafx.scene.layout.Pane;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import java.lang.reflect.Field;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -39,6 +42,11 @@ public class GameSceneTest {
         SceneryManager sceneryManager = new SceneryManager(pane, 3.0, 768, 1024);
         sceneryManager.setSceneryVariants(dummyTiles);
         scene.setSceneryManager(sceneryManager);
+        ObstacleManager manager = new ObstacleManager(
+                new Pane(),
+                new WritableImage(1, 1),
+                new WritableImage(1, 1)
+        );
 
         double tileHeight = dummyTiles[0].getHeight();
         int tilesNeeded = (int) Math.ceil(768 / tileHeight) + 1;
@@ -63,10 +71,24 @@ public class GameSceneTest {
     // Test 1: Polymorphic update() loop
     // -------------------------------
     @Test
-    void testPolymorphicUpdateLoop() {
+    void testPolymorphicUpdateLoop() throws Exception {
         GameScene scene = createDummyGameScene();
 
-        scene.update(); // call update
+        ObstacleManager manager = new ObstacleManager(
+                new Pane(),
+                new WritableImage(1,1),
+                new WritableImage(1,1)
+        );
+
+        // 🔥 inject into private field
+        Field field = GameScene.class.getDeclaredField("obstacleManager");
+        field.setAccessible(true);
+        field.set(scene, manager);
+
+        // ensure objects exist
+        scene.getGameObjects().addAll(manager.spawnInitialObjects());
+
+        scene.update();
 
         assertFalse(scene.getGameObjects().isEmpty(), "GameObjects list should not be empty");
 
@@ -75,7 +97,6 @@ public class GameSceneTest {
             assertNotNull(obj.getY(), "Object Y should not be null");
         }
     }
-
     // -------------------------------
     // Test 2: Integration of Player, Obstacles, SceneryTiles
     // -------------------------------
@@ -102,25 +123,42 @@ public class GameSceneTest {
     // Test 3: Collision detection loop
     // -------------------------------
     @Test
-    void testCollisionDetectionLoop() {
+    void testCollisionDetectionLoop() throws Exception {
         GameScene scene = createDummyGameScene();
+
+        ObstacleManager manager = new ObstacleManager(
+                new Pane(),
+                new WritableImage(1,1),
+                new WritableImage(1,1)
+        );
+
+        // inject obstacleManager (same fix as other test)
+        Field field = GameScene.class.getDeclaredField("obstacleManager");
+        field.setAccessible(true);
+        field.set(scene, manager);
 
         Image obstacleImg = new Image(getClass().getResourceAsStream("/Obstacles/obstacle_dummy.png"));
 
-        // Create overlapping obstacles to force collision
         class CollisionRecorder extends Obstacle {
             boolean collided = false;
-            public CollisionRecorder(Image img, double x, double y) { super(img, x, y); }
+
+            public CollisionRecorder(Image img, double x, double y) {
+                super(img, x, y, Obstacle.Theme.CITY, Obstacle.Size.SMALL);
+            }
+
             @Override
-            public void onCollision(Collidable other) { collided = true; }
+            public void onCollision(Collidable other) {
+                collided = true;
+            }
         }
 
         CollisionRecorder cr1 = new CollisionRecorder(obstacleImg, 500, 500);
         CollisionRecorder cr2 = new CollisionRecorder(obstacleImg, 500, 500);
+
         scene.getGameObjects().add(cr1);
         scene.getGameObjects().add(cr2);
 
-        scene.update(); // triggers collision check
+        scene.update();
 
         assertTrue(cr1.collided, "cr1 should have registered collision");
         assertTrue(cr2.collided, "cr2 should have registered collision");

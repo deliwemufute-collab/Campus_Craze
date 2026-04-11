@@ -39,10 +39,6 @@ public class Coin extends GameObject implements Collidable {
         if (other instanceof Player && !collected) {
             collected = true;
             sprite.setVisible(false);
-
-            if (scoreManager != null) {
-                scoreManager.addCoin();
-            }
         }
     }
 
