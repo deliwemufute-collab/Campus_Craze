@@ -66,6 +66,25 @@ public class Player extends GameObject implements Collidable {
     // Cooldown to prevent collision firing every frame for the same contact
     private long lastBuildingCollisionTime = 0;
     private static final long BUILDING_COLLISION_COOLDOWN_MS = 500; // half a second
+    // --- INVULNERABILITY WINDOW ---
+    /** True while player is invulnerable after being hit */
+    private boolean invulnerable = false;
+
+    /** Timestamp when invulnerability started */
+    private long invulnerabilityStartTime = 0;
+
+    /** How long invulnerability lasts in milliseconds (0.4 seconds) */
+    private static final long INVULNERABILITY_DURATION_MS = 400;
+
+// --- HIT FLASH ---
+    /** True while the hit flash animation is running */
+    private boolean flashing = false;
+
+    /** Tracks flash cycle for opacity animation */
+    private int flashFrameCount = 0;
+
+    /** How many frames the flash animation lasts */
+    private static final int FLASH_DURATION_FRAMES = 20;
 
     /**
      * Creates a new Player at the given position within the road boundaries.
