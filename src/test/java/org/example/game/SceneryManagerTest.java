@@ -2,6 +2,7 @@ package org.example.game;
 
 import javafx.application.Platform;
 import javafx.scene.image.Image;
+import javafx.scene.image.WritableImage;
 import javafx.scene.layout.Pane;
 import org.junit.jupiter.api.*;
 
@@ -37,16 +38,16 @@ public class SceneryManagerTest {
         manager = new SceneryManager(testPane, 3.0, 768, 1024);
 
         testVariants = new Image[]{
-                new Image(SceneryManagerTest.class.getResourceAsStream("/Tiles/dummy_tile_start.png")),
-                new Image(SceneryManagerTest.class.getResourceAsStream("/Tiles/dummy_tile_mid_1.png")),
-                new Image(SceneryManagerTest.class.getResourceAsStream("/Tiles/dummy_tile_mid_2.png"))
+                new WritableImage(100, 320),
+                new WritableImage(100, 320),
+                new WritableImage(100, 320)
         };
 
         // Alternate set used for theme-switch tests
         altVariants = new Image[]{
-                new Image(SceneryManagerTest.class.getResourceAsStream("/Tiles/dummy_tile_mid_3.png")),
-                new Image(SceneryManagerTest.class.getResourceAsStream("/Tiles/dummy_tile_mid_4.png")),
-                new Image(SceneryManagerTest.class.getResourceAsStream("/Tiles/dummy_tile_end.png"))
+                new WritableImage(100, 320),
+                new WritableImage(100, 320),
+                new WritableImage(100, 320)
         };
 
         manager.setSceneryVariants(testVariants);
@@ -173,18 +174,14 @@ public class SceneryManagerTest {
 
     @Test
     void testSpawnOverlayTileAddsToOverlayList() {
-        Image overlayImage = new Image(
-                SceneryManagerTest.class.getResourceAsStream("/Tiles/dummy_tile_mid_1.png")
-        );
+        Image overlayImage = new WritableImage(100, 320);
         manager.spawnOverlayTile(overlayImage, 0, 0);
         assertEquals(1, manager.getOverlayTiles().size());
     }
 
     @Test
     void testSpawnOverlayTileAddsSpriteToPane() {
-        Image overlayImage = new Image(
-                SceneryManagerTest.class.getResourceAsStream("/Tiles/dummy_tile_mid_1.png")
-        );
+        Image overlayImage = new WritableImage(100, 320);
         int paneChildrenBefore = testPane.getChildren().size();
         manager.spawnOverlayTile(overlayImage, 0, 0);
         assertEquals(paneChildrenBefore + 1, testPane.getChildren().size());
@@ -192,9 +189,7 @@ public class SceneryManagerTest {
 
     @Test
     void testOverlayTilesScrollAtSameSpeedAsBackground() {
-        Image overlayImage = new Image(
-                SceneryManagerTest.class.getResourceAsStream("/Tiles/dummy_tile_mid_1.png")
-        );
+        Image overlayImage = new WritableImage(100, 320);
         manager.spawnOverlayTile(overlayImage, 0, 0);
         double initialY = manager.getOverlayTiles().get(0).getY();
         manager.update();
@@ -203,9 +198,7 @@ public class SceneryManagerTest {
 
     @Test
     void testOffscreenOverlayTileIsRecycled() {
-        Image overlayImage = new Image(
-                SceneryManagerTest.class.getResourceAsStream("/Tiles/dummy_tile_mid_1.png")
-        );
+        Image overlayImage = new WritableImage(100, 320);
         manager.spawnOverlayTile(overlayImage, 0, 767);
         manager.update();
         assertTrue(manager.getOverlayTiles().get(0).getY() < 0,
@@ -214,9 +207,7 @@ public class SceneryManagerTest {
 
     @Test
     void testOverlayCountUnchangedAfterRecycle() {
-        Image overlayImage = new Image(
-                SceneryManagerTest.class.getResourceAsStream("/Tiles/dummy_tile_mid_1.png")
-        );
+        Image overlayImage = new WritableImage(100, 320);
         manager.spawnOverlayTile(overlayImage, 0, 767);
         manager.update();
         assertEquals(1, manager.getOverlayTiles().size());
@@ -226,9 +217,7 @@ public class SceneryManagerTest {
     void testBackgroundAndOverlayTilesAreIndependentLists() {
         // Spawning a background tile should not affect the overlay list and vice versa
         manager.spawnTile(0);
-        Image overlayImage = new Image(
-                SceneryManagerTest.class.getResourceAsStream("/Tiles/dummy_tile_mid_1.png")
-        );
+        Image overlayImage = new WritableImage(100, 320);
         manager.spawnOverlayTile(overlayImage, 0, 0);
 
         assertEquals(1, manager.getTiles().size());
