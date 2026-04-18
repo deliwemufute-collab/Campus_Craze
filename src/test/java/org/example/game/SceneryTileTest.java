@@ -2,6 +2,7 @@ package org.example.game;
 
 import com.sun.javafx.application.PlatformImpl;
 import javafx.scene.image.Image;
+import javafx.scene.image.WritableImage;
 import org.junit.jupiter.api.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -27,9 +28,7 @@ public class SceneryTileTest {
 
     @BeforeEach
     void setUp() {
-        testImage = new Image(
-                SceneryTileTest.class.getResourceAsStream("/Tiles/dummy_tile_start.png")
-        );
+        testImage = new WritableImage(100, 320);
         // Milestone 2: constructor now accepts scrollSpeed
         tile = new SceneryTile(testImage, 50, 100, 3.0);
     }
@@ -65,9 +64,7 @@ public class SceneryTileTest {
 
     @Test
     void testSetImageSwapsImage() {
-        Image newImage = new Image(
-                SceneryTileTest.class.getResourceAsStream("/Tiles/dummy_tile_mid_1.png")
-        );
+        Image newImage = new WritableImage(100, 320);
         tile.setImage(newImage);
         assertEquals(newImage, tile.getSprite().getImage());
     }

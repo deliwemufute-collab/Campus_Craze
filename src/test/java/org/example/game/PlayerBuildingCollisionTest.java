@@ -43,11 +43,9 @@ public class PlayerBuildingCollisionTest {
                 OVERLAY_WIDTH,
                 SCREEN_WIDTH - OVERLAY_WIDTH);
 
-        leftBuilding  = new BuildingTile(new Image(
-                PlayerBuildingCollisionTest.class.getResourceAsStream("/Tiles/dummy_tile_start.png")),
+        leftBuilding  = new BuildingTile(new javafx.scene.image.WritableImage(50, 80),
                 0, 300, SCROLL_SPEED);
-        rightBuilding = new BuildingTile(new Image(
-                PlayerBuildingCollisionTest.class.getResourceAsStream("/Tiles/dummy_tile_start.png")),
+        rightBuilding = new BuildingTile(new javafx.scene.image.WritableImage(50, 80),
                 SCREEN_WIDTH - OVERLAY_WIDTH, 300, SCROLL_SPEED);
     }
 
