@@ -3,6 +3,7 @@ package org.example.game;
 import com.sun.javafx.application.PlatformImpl;
 import javafx.geometry.Bounds;
 import javafx.scene.image.Image;
+import javafx.scene.image.WritableImage;
 import org.junit.jupiter.api.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -37,9 +38,7 @@ public class BuildingTileTest {
 
     @BeforeEach
     void setUp() {
-        testImage = new Image(
-                BuildingTileTest.class.getResourceAsStream("/Tiles/dummy_tile_start.png")
-        );
+        testImage = new WritableImage(100, 320);
         buildingTile = new BuildingTile(testImage, 0, 100, 3.0);
     }
 
@@ -88,9 +87,7 @@ public class BuildingTileTest {
 
     @Test
     void testInheritedSetImageSwapsImage() {
-        Image newImage = new Image(
-                BuildingTileTest.class.getResourceAsStream("/Tiles/dummy_tile_mid_1.png")
-        );
+        Image newImage = new WritableImage(100, 320);
         buildingTile.setImage(newImage);
         assertEquals(newImage, buildingTile.getSprite().getImage());
     }

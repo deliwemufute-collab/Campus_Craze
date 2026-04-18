@@ -205,6 +205,9 @@ public class SceneryManager {
      */
     public SceneryTile spawnTile(double startY) {
         Image variant = pickNextVariant();
+        if (variant == null) {
+            return null;
+        }
         SceneryTile tile = new SceneryTile(variant, 0, startY, scrollSpeed);
         tiles.add(tile);
         gamePane.getChildren().add(tile.getSprite());
@@ -248,13 +251,12 @@ public class SceneryManager {
      * Falls back to a dummy asset if no variants are set.
      */
     private Image pickNextVariant() {
-        if (sceneryVariants != null && sceneryVariants.length > 0) {
-            Image v = sceneryVariants[nextVariantIndex % sceneryVariants.length];
-            nextVariantIndex++;
-            return v;
+        if (sceneryVariants == null || sceneryVariants.length == 0) {
+            return null;
         }
-        // Fallback so spawnTile() never crashes when variants are not yet loaded
-        return new Image(getClass().getResourceAsStream("/Tiles/dummy_tile_start.png"));
+        Image v = sceneryVariants[nextVariantIndex % sceneryVariants.length];
+        nextVariantIndex++;
+        return v;
     }
 
     // -----------------------------------------------------------------------
