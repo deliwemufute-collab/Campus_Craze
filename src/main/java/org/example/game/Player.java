@@ -161,11 +161,12 @@ public class Player extends GameObject implements Collidable {
         if (y > maxY)         { y = maxY;          velocityY = 0; }
 
         // --- SYNC SPRITE ---
-        sprite.setX(x - width / 2);
+        sprite.setX(x);
         sprite.setY(y);
+
     }
 
-   
+
     /**
      * Returns a reduced bounding box for collision detection.
      * Milestone 3: shrinks hitbox by 20% on all sides to prevent
