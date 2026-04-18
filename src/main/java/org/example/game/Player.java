@@ -17,77 +17,122 @@ public class Player extends GameObject implements Collidable {
     private long lastObstacleCollisionTime = 0;
     private static final long OBSTACLE_COLLISION_COOLDOWN_MS = 1000;
     // 1 second
-    /** The visual representation of the player on screen */
+    /**
+     * The visual representation of the player on screen
+     */
     private ImageView sprite;
 
-    /** True while LEFT arrow key is held down */
-    private boolean movingLeft  = false;
+    /**
+     * True while LEFT arrow key is held down
+     */
+    private boolean movingLeft = false;
 
-    /** True while RIGHT arrow key is held down */
+    /**
+     * True while RIGHT arrow key is held down
+     */
     private boolean movingRight = false;
-    /** True while UP arrow key is held down — slight forward movement */
-    private boolean movingUp    = false;
+    /**
+     * True while UP arrow key is held down — slight forward movement
+     */
+    private boolean movingUp = false;
 
-    /** True while DOWN arrow key is held down — slight backward movement */
-    private boolean movingDown  = false;
+    /**
+     * True while DOWN arrow key is held down — slight backward movement
+     */
+    private boolean movingDown = false;
 
-    /** Left road boundary — player cannot go left of this */
+    /**
+     * Left road boundary — player cannot go left of this
+     */
     private final double minX;
 
-    /** Right road boundary — player cannot go right of this */
+    /**
+     * Right road boundary — player cannot go right of this
+     */
     private final double maxX;
 
-    /** Reference to ScoreManager — set by GameScene after construction */
+    /**
+     * Reference to ScoreManager — set by GameScene after construction
+     */
     private ScoreManager scoreManager;
-    /** Current horizontal speed — builds up and slows down smoothly */
+    /**
+     * Current horizontal speed — builds up and slows down smoothly
+     */
     private double velocityX = 0;
 
-    /** Current vertical speed — kept small for slight forward/backward movement */
+    /**
+     * Current vertical speed — kept small for slight forward/backward movement
+     */
     private double velocityY = 0;
 
-    /** How fast velocity builds each frame when key is held */
+    /**
+     * How fast velocity builds each frame when key is held
+     */
     private static final double ACCELERATION = 1.0;
 
-    /** Friction factor — velocity shrinks by 15% each frame when key released */
+    /**
+     * Friction factor — velocity shrinks by 15% each frame when key released
+     */
     private static final double DECELERATION = 0.85;
 
-    /** Maximum horizontal speed */
-    private static final double MAX_SPEED_X  = 6.0;
+    /**
+     * Maximum horizontal speed
+     */
+    private static final double MAX_SPEED_X = 6.0;
 
-    /** Maximum vertical speed to cover 3/4 of screen */
-    private static final double MAX_SPEED_Y  = 5.0;
+    /**
+     * Maximum vertical speed to cover 3/4 of screen
+     */
+    private static final double MAX_SPEED_Y = 5.0;
 
-    /** Top boundary — how far forward player can move */
+    /**
+     * Top boundary — how far forward player can move
+     */
     private double minY;
 
-    /** Bottom boundary — how far backward player can move */
+    /**
+     * Bottom boundary — how far backward player can move
+     */
     private double maxY;
 
     // Cooldown to prevent collision firing every frame for the same contact
     private long lastBuildingCollisionTime = 0;
     private static final long BUILDING_COLLISION_COOLDOWN_MS = 500; // half a second
     // --- INVULNERABILITY WINDOW ---
-    /** True while player is invulnerable after being hit */
+    /**
+     * True while player is invulnerable after being hit
+     */
     private boolean invulnerable = false;
 
-    /** Timestamp when invulnerability started */
+    /**
+     * Timestamp when invulnerability started
+     */
     private long invulnerabilityStartTime = 0;
 
-    /** How long invulnerability lasts in milliseconds (0.4 seconds) */
+    /**
+     * How long invulnerability lasts in milliseconds (0.4 seconds)
+     */
     private static final long INVULNERABILITY_DURATION_MS = 400;
 
 // --- HIT FLASH ---
-    /** True while the hit flash animation is running */
+    /**
+     * True while the hit flash animation is running
+     */
     private boolean flashing = false;
 
-    /** Tracks flash cycle for opacity animation */
+    /**
+     * Tracks flash cycle for opacity animation
+     */
     private int flashFrameCount = 0;
 
-    /** How many frames the flash animation lasts */
+    /**
+     * How many frames the flash animation lasts
+     */
     private static final int FLASH_DURATION_FRAMES = 20;
 
     /**
      * Creates a new Player at the given position within the road boundaries.
+     *
      * @param spriteImage the image to display as the player character
      * @param startX      starting X position
      * @param startY      starting Y position
@@ -109,33 +154,70 @@ public class Player extends GameObject implements Collidable {
         this.maxY = startY + 100;
     }
 
-    /** Called when LEFT arrow key is pressed */
-    public void moveLeft()  { movingLeft  = true;  }
+    /**
+     * Called when LEFT arrow key is pressed
+     */
+    public void moveLeft() {
+        movingLeft = true;
+    }
 
-    /** Called when RIGHT arrow key is pressed */
-    public void moveRight() { movingRight = true;  }
+    /**
+     * Called when RIGHT arrow key is pressed
+     */
+    public void moveRight() {
+        movingRight = true;
+    }
 
-    /** Called when LEFT arrow key is released */
-    public void stopLeft()  { movingLeft  = false; }
+    /**
+     * Called when LEFT arrow key is released
+     */
+    public void stopLeft() {
+        movingLeft = false;
+    }
 
-    /** Called when RIGHT arrow key is released */
-    public void stopRight() { movingRight = false; }
-    /** Called when UP arrow key is pressed */
-    public void moveUp()    { movingUp    = true;  }
+    /**
+     * Called when RIGHT arrow key is released
+     */
+    public void stopRight() {
+        movingRight = false;
+    }
 
-    /** Called when DOWN arrow key is pressed */
-    public void moveDown()  { movingDown  = true;  }
+    /**
+     * Called when UP arrow key is pressed
+     */
+    public void moveUp() {
+        movingUp = true;
+    }
 
-    /** Called when UP arrow key is released */
-    public void stopUp()    { movingUp    = false; }
+    /**
+     * Called when DOWN arrow key is pressed
+     */
+    public void moveDown() {
+        movingDown = true;
+    }
 
-    /** Called when DOWN arrow key is released */
-    public void stopDown()  { movingDown  = false; }
+    /**
+     * Called when UP arrow key is released
+     */
+    public void stopUp() {
+        movingUp = false;
+    }
+
+    /**
+     * Called when DOWN arrow key is released
+     */
+    public void stopDown() {
+        movingDown = false;
+    }
 
 
-    /** Called every frame by GameScene polymorphically */
+    /**
+     * Called every frame by GameScene polymorphically
+     */
     @Override
-    public void update() { updatePosition(); }
+    public void update() {
+        updatePosition();
+    }
 
     /**
      * Updates the player position each frame using velocity-based movement.
@@ -150,7 +232,7 @@ public class Player extends GameObject implements Collidable {
     public void updatePosition() {
 
         // --- HORIZONTAL VELOCITY ---
-        if (movingLeft)  velocityX -= ACCELERATION;
+        if (movingLeft) velocityX -= ACCELERATION;
         if (movingRight) velocityX += ACCELERATION;
         if (!movingLeft && !movingRight) {
             velocityX *= DECELERATION;
@@ -158,7 +240,7 @@ public class Player extends GameObject implements Collidable {
         }
 
         // --- VERTICAL VELOCITY (slight forward/backward) ---
-        if (movingUp)   velocityY -= ACCELERATION;
+        if (movingUp) velocityY -= ACCELERATION;
         if (movingDown) velocityY += ACCELERATION;
         if (!movingUp && !movingDown) {
             velocityY *= DECELERATION;
@@ -174,10 +256,22 @@ public class Player extends GameObject implements Collidable {
         y += velocityY;
 
         // --- CLAMP TO BOUNDARIES ---
-        if (x < minX)         { x = minX;         velocityX = 0; }
-        if (x > maxX - width) { x = maxX - width; velocityX = 0; }
-        if (y < minY)         { y = minY;          velocityY = 0; }
-        if (y > maxY)         { y = maxY;          velocityY = 0; }
+        if (x < minX) {
+            x = minX;
+            velocityX = 0;
+        }
+        if (x > maxX - width) {
+            x = maxX - width;
+            velocityX = 0;
+        }
+        if (y < minY) {
+            y = minY;
+            velocityY = 0;
+        }
+        if (y > maxY) {
+            y = maxY;
+            velocityY = 0;
+        }
 
         // --- SYNC SPRITE ---
         sprite.setX(x);
@@ -218,18 +312,20 @@ public class Player extends GameObject implements Collidable {
     @Override
     public Bounds getBounds() {
         double leeway = 0.20; // 20% reduction on each side
-        double offsetX = width  * leeway;
+        double offsetX = width * leeway;
         double offsetY = height * leeway;
         return new BoundingBox(
-                x      + offsetX,
-                y      + offsetY,
-                width  - offsetX * 2,
+                x + offsetX,
+                y + offsetY,
+                width - offsetX * 2,
                 height - offsetY * 2
         );
 
     }
 
-    /** Handles collision response */
+    /**
+     * Handles collision response
+     */
     @Override
     public void onCollision(Collidable other) {
         if (other == null) return;
@@ -276,22 +372,44 @@ public class Player extends GameObject implements Collidable {
         }
     }
 
-    /** Returns the player sprite */
-    public ImageView getSprite()  { return sprite; }
+    /**
+     * Returns the player sprite
+     */
+    public ImageView getSprite() {
+        return sprite;
+    }
 
-    /** Returns left road boundary */
-    public double getRoadMinX()   { return minX;   }
+    /**
+     * Returns left road boundary
+     */
+    public double getRoadMinX() {
+        return minX;
+    }
 
-    /** Returns right road boundary */
-    public double getRoadMaxX()   { return maxX;   }
-    /** Returns current horizontal velocity — used in tests */
-    public double getVelocityX()  { return velocityX; }
+    /**
+     * Returns right road boundary
+     */
+    public double getRoadMaxX() {
+        return maxX;
+    }
 
-    /** Returns current vertical velocity — used in tests */
-    public double getVelocityY()  { return velocityY; }
+    /**
+     * Returns current horizontal velocity — used in tests
+     */
+    public double getVelocityX() {
+        return velocityX;
+    }
+
+    /**
+     * Returns current vertical velocity — used in tests
+     */
+    public double getVelocityY() {
+        return velocityY;
+    }
 
     /**
      * Sets custom Y boundaries for vertical movement.
+     *
      * @param minY highest Y the player can reach
      * @param maxY lowest Y the player can reach
      */
@@ -300,7 +418,38 @@ public class Player extends GameObject implements Collidable {
         this.maxY = maxY;
     }
 
-    /** Injects ScoreManager so Player can trigger loseLife() */
+    /**
+     * Returns true if player is currently invulnerable — used in tests
+     */
+    public boolean isInvulnerable() {
+        return invulnerable;
+    }
+
+    /**
+     * Returns true if hit flash is currently playing — used in tests
+     */
+    public boolean isFlashing() {
+        return flashing;
+    }
+
+    /**
+     * Returns current top Y boundary — used in tests
+     */
+    public double getMinY() {
+        return minY;
+    }
+
+    /**
+     * Returns current bottom Y boundary — used in tests
+     */
+    public double getMaxY() {
+        return maxY;
+    }
+
+
+    /**
+     * Injects ScoreManager so Player can trigger loseLife()
+     */
     // it lets GameScene pass in the score manager
     public void setScoreManager(ScoreManager scoreManager) {
         this.scoreManager = scoreManager;
