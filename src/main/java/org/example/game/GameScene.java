@@ -13,8 +13,8 @@ public class GameScene {
     // --- Constants ---
     private final double screenWidth;
     private final double screenHeight;
-    private static final double ROAD_LEFT_X  = 130.0; // Playable area
-    private static final double ROAD_RIGHT_X = 890.0; // Playable area
+    private static final double ROAD_LEFT_X  = 290.0; // Playable area
+    private static final double ROAD_RIGHT_X = 820.0; // Playable area
     private static final double SCROLL_SPEED = 3.0;
 
     private static final double TILE_H       = 320.0;  // actual tile height from assets
