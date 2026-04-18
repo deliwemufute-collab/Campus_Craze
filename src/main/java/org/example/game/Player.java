@@ -236,6 +236,9 @@ public class Player extends GameObject implements Collidable {
 
         if (other instanceof Obstacle && scoreManager != null) {
 
+            // Skip if player is currently invulnerable
+            if (invulnerable) return;
+
             long now = System.currentTimeMillis();
 
             if (now - lastObstacleCollisionTime < OBSTACLE_COLLISION_COOLDOWN_MS) {
@@ -247,6 +250,14 @@ public class Player extends GameObject implements Collidable {
             System.out.println("PLAYER HIT OBSTACLE → lose life");
 
             scoreManager.loseLife();
+
+            // Start invulnerability window so player cannot be hit again immediately
+            invulnerable = true;
+            invulnerabilityStartTime = now;
+
+            // Start hit flash animation
+            flashing = true;
+            flashFrameCount = 0;
         }
 
         if (other instanceof BuildingTile) {
