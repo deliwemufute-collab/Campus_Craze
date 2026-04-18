@@ -165,15 +165,25 @@ public class Player extends GameObject implements Collidable {
         sprite.setY(y);
     }
 
-    /** Returns bounding box for collision detection */
+   
+    /**
+     * Returns a reduced bounding box for collision detection.
+     * Milestone 3: shrinks hitbox by 20% on all sides to prevent
+     * unfair collisions where the player visually misses but still gets hit.
+     * This is the hitbox leeway.
+     */
     @Override
     public Bounds getBounds() {
+        double leeway = 0.20; // 20% reduction on each side
+        double offsetX = width  * leeway;
+        double offsetY = height * leeway;
         return new BoundingBox(
-                x,
-                y,
-                width,
-                height
+                x      + offsetX,
+                y      + offsetY,
+                width  - offsetX * 2,
+                height - offsetY * 2
         );
+
     }
 
     /** Handles collision response */
