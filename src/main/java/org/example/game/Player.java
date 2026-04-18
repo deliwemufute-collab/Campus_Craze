@@ -54,8 +54,8 @@ public class Player extends GameObject implements Collidable {
     /** Maximum horizontal speed */
     private static final double MAX_SPEED_X  = 6.0;
 
-    /** Maximum vertical speed — smaller than X to keep movement slight */
-    private static final double MAX_SPEED_Y  = 3.0;
+    /** Maximum vertical speed to cover 3/4 of screen */
+    private static final double MAX_SPEED_Y  = 5.0;
 
     /** Top boundary — how far forward player can move */
     private double minY;
@@ -86,8 +86,8 @@ public class Player extends GameObject implements Collidable {
         if (this.x < minX) this.x = minX;
         if (this.x + width > maxX) this.x = maxX - width;
         sprite.setX(this.x);
-        this.minY = startY - 80;
-        this.maxY = startY + 40;
+        this.minY = startY - 426;
+        this.maxY = startY + 100;
     }
 
     /** Called when LEFT arrow key is pressed */
