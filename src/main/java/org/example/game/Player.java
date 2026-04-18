@@ -183,6 +183,29 @@ public class Player extends GameObject implements Collidable {
         sprite.setX(x);
         sprite.setY(y);
 
+// --- HIT FLASH ANIMATION ---
+// Cycles sprite opacity on/off to show player was hit
+        if (flashing) {
+            flashFrameCount++;
+            // Toggle opacity every 3 frames for visible flicker effect
+            sprite.setOpacity(flashFrameCount % 6 < 3 ? 0.3 : 1.0);
+            if (flashFrameCount >= FLASH_DURATION_FRAMES) {
+                // Flash finished — reset to full opacity
+                flashing = false;
+                flashFrameCount = 0;
+                sprite.setOpacity(1.0);
+            }
+        }
+
+// --- INVULNERABILITY WINDOW CHECK ---
+// Check if invulnerability window has expired
+        if (invulnerable) {
+            long now = System.currentTimeMillis();
+            if (now - invulnerabilityStartTime >= INVULNERABILITY_DURATION_MS) {
+                invulnerable = false;
+            }
+        }
+
     }
 
 
