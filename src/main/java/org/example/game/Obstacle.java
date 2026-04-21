@@ -56,6 +56,10 @@ public class Obstacle extends GameObject implements Collidable {
 
     private boolean collidedWithPlayer = false;
 
+    public void setCollidedWithPlayer(boolean value) {
+        this.collidedWithPlayer = value;
+    }
+
     // ── Full constructor ───────────────────────────────────────────────────
 
     public Obstacle(Image spriteImage, double centreX, double startY,
@@ -105,8 +109,9 @@ public class Obstacle extends GameObject implements Collidable {
 
     @Override
     public Bounds getBounds() {
+        // x is horizontal centre of the obstacle (lane position); hitbox matches the sprite.
         return new BoundingBox(
-                x,
+                x - width / 2,
                 y,
                 width,
                 height
@@ -157,7 +162,7 @@ public class Obstacle extends GameObject implements Collidable {
     // ── Helper ─────────────────────────────────────────────────────────────
 
     private void syncSprite() {
-        sprite.setX(x);
+        sprite.setX(x - width / 2);
         sprite.setY(y);
     }
 
@@ -169,3 +174,7 @@ public class Obstacle extends GameObject implements Collidable {
     public Size      getSize()               { return size; }
     public ImageView getSprite()             { return sprite; }
 }
+
+
+
+

@@ -26,7 +26,11 @@ public class Coin extends GameObject implements Collidable {
         syncSprite();
     }
 
-    @Override public void update()         { updatePosition(); }
+    @Override
+    public void update() {
+        y += 3.0;  // default scroll speed
+        syncSprite();
+    }
     @Override public void updatePosition() { syncSprite(); }
 
     @Override
