@@ -137,6 +137,10 @@ public class GameScene {
         System.out.println("GameScene: Game loop started.");
     }
 
+    public void stopGameLoop() {
+        if (gameLoop != null) gameLoop.stop();
+    }
+
     public void setupKeyboard(Scene scene) {
         scene.setOnKeyPressed(e -> {
             if (player == null) return;
@@ -192,19 +196,18 @@ public class GameScene {
     // ===============================
     // Getters
     // ===============================
-    public Pane getGamePane() {
-        return gamePane;
+    public Pane getGamePane()               { return gamePane; }
+    public Player getPlayer()               { return player; }
+    public SceneryManager getSceneryManager() { return sceneryManager; }
+    public List<GameObject> getGameObjects() { return gameObjects; }
+    public ScoreManager getScoreManager()   { return scoreManager; }
+
+
+    // ===============================
+    // Setters
+    // ===============================
+    void setScoreManager(ScoreManager scoreManager) {
+        this.scoreManager = scoreManager;
     }
 
-    public Player getPlayer() {
-        return player;
-    }
-
-    public SceneryManager getSceneryManager() {
-        return sceneryManager;
-    }
-
-    public List<GameObject> getGameObjects() {
-        return gameObjects;
-    }
 }

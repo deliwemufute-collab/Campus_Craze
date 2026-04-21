@@ -25,9 +25,42 @@ public class Main extends Application {
         // when play button is clicked then hides the menu and starts the game
         menuScene.setStartButtonAction(() -> {
             root.getChildren().remove(menuPane);
+
             GameScene gameScene = new GameScene(root, 1024, 768);
             gameScene.initializeGameObjects();
             gameScene.setupKeyboard(scene);
+
+            // set up game over screen
+            gameScene.getScoreManager().setOnGameOver(() -> {
+                gameScene.stopGameLoop();
+
+                Pane gameOverPane = new Pane();
+                root.getChildren().add(gameOverPane);
+
+                org.example.menu.GameOverScene gameOverScene = new org.example.menu.GameOverScene(gameOverPane);
+                gameOverScene.setFinalStats(
+                        gameScene.getScoreManager().getScore(),
+                        gameScene.getScoreManager().getCoins()
+                );
+
+                // restart button reloads the game
+                gameOverScene.setOnRestart(() -> {
+                    root.getChildren().clear();
+                    Pane newMenuPane = new Pane();
+                    root.getChildren().add(newMenuPane);
+                    MenuScene newMenu = new MenuScene(newMenuPane);
+                    newMenu.setupMenu();
+                    newMenu.setStartButtonAction(() -> {
+                        root.getChildren().remove(newMenuPane);
+                        GameScene newGame = new GameScene(root, 1024, 768);
+                        newGame.initializeGameObjects();
+                        newGame.setupKeyboard(scene);
+                        newGame.getScoreManager().setOnGameOver(() -> {});
+                        newGame.startGameLoop();
+                    });
+                });
+            });
+
             gameScene.startGameLoop();
         });
 
