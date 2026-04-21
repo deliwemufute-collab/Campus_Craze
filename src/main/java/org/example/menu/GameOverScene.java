@@ -66,8 +66,22 @@ public class GameOverScene {
         playAgainBtn.setOnMouseEntered(e -> playAgainBtn.setOpacity(0.8));
         playAgainBtn.setOnMouseExited(e -> playAgainBtn.setOpacity(1.0));
 
+        // load the exit button asset and position it below play again
+        Image exitBtnImage = new Image(getClass().getResourceAsStream("/Menu_assets/exit_button.png"));
+        ImageView exitBtn = new ImageView(exitBtnImage);
+        exitBtn.setFitWidth(200);
+        exitBtn.setFitHeight(60);
+        exitBtn.setLayoutX(412);
+        exitBtn.setLayoutY(530);
+
+        // close the whole application when exit is clicked
+        exitBtn.setOnMouseClicked(e -> javafx.application.Platform.exit());
+
+        // make it look clickable on hover
+        exitBtn.setOnMouseEntered(e -> exitBtn.setOpacity(0.8));
+        exitBtn.setOnMouseExited(e -> exitBtn.setOpacity(1.0));
         // add everything to the pane in the right order
-        gameOverPane.getChildren().addAll(background, scoreLabel, coinsLabel, playAgainBtn);
+        gameOverPane.getChildren().addAll(background, scoreLabel, coinsLabel, playAgainBtn, exitBtn);
     }
 
     // update the score and coins labels when the game ends

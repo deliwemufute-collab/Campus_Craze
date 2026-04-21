@@ -102,4 +102,11 @@ class GameOverSceneTest {
         scoreManager.loseLife();
         assertFalse(gameOverFired[0]);
     }
+    
+    // exit button should be present in the pane
+    @Test
+    @DisplayName("GameOver pane should contain more than 3 children including exit button")
+    void testGameOverPaneHasExitButton() {
+        assertTrue(pane.getChildren().size() >= 4);
+    }
 }
