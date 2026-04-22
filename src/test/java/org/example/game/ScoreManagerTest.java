@@ -64,7 +64,7 @@ class ScoreManagerTest {
     @DisplayName("incrementScore should update the HUD score label")
     void testScoreUpdatesHUD() {
         scoreManager.incrementScore();
-        assertEquals("Score: 1", hud.getScoreLabel().getText());
+        assertEquals("Score: 000001", hud.getScoreLabel().getText());
     }
 
     // LIVES TESTS
@@ -73,7 +73,7 @@ class ScoreManagerTest {
     @Test
     @DisplayName("Lives should start at 3")
     void testLivesStartAtThree() {
-        assertEquals(3, scoreManager.getLives());
+        assertEquals(5, scoreManager.getLives());
     }
 
     // hitting an obstacle should take away one life
@@ -81,13 +81,14 @@ class ScoreManagerTest {
     @DisplayName("loseLife should decrease lives by 1")
     void testLoseLifeDecreasesLives() {
         scoreManager.loseLife();
-        assertEquals(2, scoreManager.getLives());
+        assertEquals(4, scoreManager.getLives());
     }
 
     // lives should stop at 0 even if player keeps hitting obstacles
     @Test
     @DisplayName("Lives should not go below 0")
     void testLivesDoNotGoBelowZero() {
+        scoreManager.loseLife();
         scoreManager.loseLife();
         scoreManager.loseLife();
         scoreManager.loseLife();
@@ -100,7 +101,7 @@ class ScoreManagerTest {
     @DisplayName("loseLife should update the HUD lives label")
     void testLivesUpdatesHUD() {
         scoreManager.loseLife();
-        assertEquals("Lives: 2", hud.getLivesLabel().getText());
+        assertEquals("Lives: 4", hud.getLivesLabel().getText());
     }
 
     // COINS TESTS
@@ -139,13 +140,13 @@ class ScoreManagerTest {
         assertEquals(0, scoreManager.getScore());
     }
 
-    // after reset lives should go back to 3
+    // after reset lives should go back to 5
     @Test
     @DisplayName("reset should set lives back to 3")
     void testResetSetsLivesToThree() {
         scoreManager.loseLife();
         scoreManager.reset();
-        assertEquals(3, scoreManager.getLives());
+        assertEquals(5, scoreManager.getLives());
     }
 
     // after reset coins should go back to 0
@@ -165,7 +166,7 @@ class ScoreManagerTest {
         scoreManager.loseLife();
         scoreManager.addCoin();
         scoreManager.reset();
-        assertAll(() -> assertEquals("Score: 0", hud.getScoreLabel().getText()), () -> assertEquals("Lives: 3", hud.getLivesLabel().getText()), () -> assertEquals("Coins: 0", hud.getCoinsLabel().getText()));
+        assertAll(() -> assertEquals("Score: 000000", hud.getScoreLabel().getText()), () -> assertEquals("Lives: 5", hud.getLivesLabel().getText()), () -> assertEquals("Coins: 0", hud.getCoinsLabel().getText()));
 
 
     }

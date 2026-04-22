@@ -42,9 +42,9 @@ class HUDManagerTest {
 
     // score label shows Score: 0 at start
     @Test
-    @DisplayName("Score label should show Score: 0 at start")
+    @DisplayName("Score label should show Score: 000000 at start")
     void testScoreLabelStartsAtZero() {
-            assertEquals("Score: 0", hud.getScoreLabel().getText());
+            assertEquals("Score: 000000", hud.getScoreLabel().getText());
     }
 
     // check if updateScore actually changes the label
@@ -52,7 +52,7 @@ class HUDManagerTest {
     @DisplayName("update Score should update the label text")
     void testUpdateScoreChangesLabel() {
         hud.updateScore(100);
-        assertEquals("Score: 100", hud.getScoreLabel().getText());
+        assertEquals("Score: 000100", hud.getScoreLabel().getText());
     }
     // check multiple score updates show latest value
     @Test
@@ -61,7 +61,7 @@ class HUDManagerTest {
         hud.updateScore(50);
         hud.updateScore(200);
         hud.updateScore(350);
-        assertEquals("Score: 350", hud.getScoreLabel().getText());
+        assertEquals("Score: 000350", hud.getScoreLabel().getText());
     }
     // check if score resets to 0
     @Test
@@ -69,14 +69,14 @@ class HUDManagerTest {
     void testUpdateScoreResetsToZero() {
         hud.updateScore(500);
         hud.updateScore(0);
-        assertEquals("Score: 0", hud.getScoreLabel().getText());
+        assertEquals("Score: 000000", hud.getScoreLabel().getText());
     }
     // testing if large score values display correctly
     @Test
     @DisplayName("Score label should handle large values correctly")
     void testScoreLargeValue() {
         hud.updateScore(99999);
-        assertEquals("Score: 99999", hud.getScoreLabel().getText());
+        assertEquals("Score: 099999", hud.getScoreLabel().getText());
     }
 
 
@@ -91,9 +91,9 @@ class HUDManagerTest {
 
     // Test to verify that lives start at 3 by default
     @Test
-    @DisplayName("Lives should start at 3")
+    @DisplayName("Lives should start at 5")
     void testLivesLabelStartsAtThree() {
-        assertEquals("Lives: 3", hud.getLivesLabel().getText());
+        assertEquals("Lives: 5", hud.getLivesLabel().getText());
     }
 
 
@@ -147,7 +147,7 @@ class HUDManagerTest {
     @DisplayName("Updating score should not change lives label")
     void testScoreUpdateDoesNotAffectLives() {
         hud.updateScore(999);
-        assertEquals("Lives: 3", hud.getLivesLabel().getText());
+        assertEquals("Lives: 5", hud.getLivesLabel().getText());
     }
 
     // check updating lives does not affect score
@@ -155,7 +155,7 @@ class HUDManagerTest {
     @DisplayName("Updating lives should not change score label")
     void testLivesUpdateDoesNotAffectScore() {
         hud.updateLives(1);
-        assertEquals("Score: 0", hud.getScoreLabel().getText());
+        assertEquals("Score: 000000", hud.getScoreLabel().getText());
     }
 
     // check if all three labels update independently
@@ -165,7 +165,7 @@ class HUDManagerTest {
         hud.updateScore(100);
         hud.updateLives(2);
         hud.updateCoins(5);
-        assertAll(() -> assertEquals("Score: 100", hud.getScoreLabel().getText()), () -> assertEquals("Lives: 2", hud.getLivesLabel().getText()), () -> assertEquals("Coins: 5", hud.getCoinsLabel().getText()));
+        assertAll(() -> assertEquals("Score: 000100", hud.getScoreLabel().getText()), () -> assertEquals("Lives: 2", hud.getLivesLabel().getText()), () -> assertEquals("Coins: 5", hud.getCoinsLabel().getText()));
     }
 
     // checking if the HUDManager always starts with defaults
@@ -173,7 +173,7 @@ class HUDManagerTest {
     @DisplayName("HUDManager should always start with default values")
     void testNewHUDManagerStartsWithDefaults() {
         HUDManager freshHud = new HUDManager(new Pane());
-        assertAll(() -> assertEquals("Score: 0", freshHud.getScoreLabel().getText()), () -> assertEquals("Lives: 3", freshHud.getLivesLabel().getText()), () -> assertEquals("Coins: 0", freshHud.getCoinsLabel().getText()));
+        assertAll(() -> assertEquals("Score: 000000", freshHud.getScoreLabel().getText()), () -> assertEquals("Lives: 5", freshHud.getLivesLabel().getText()), () -> assertEquals("Coins: 0", freshHud.getCoinsLabel().getText()));
     }
 
 
@@ -225,7 +225,7 @@ class HUDManagerTest {
     @DisplayName("Updating coins should not change score label")
     void testCoinsUpdateDoesNotAffectScore() {
         hud.updateCoins(5);
-        assertEquals("Score: 0", hud.getScoreLabel().getText());
+        assertEquals("Score: 000000", hud.getScoreLabel().getText());
     }
 
     // checking that updating coins does not affect lives
@@ -233,7 +233,7 @@ class HUDManagerTest {
     @DisplayName("Updating coins should not change lives label")
     void testCoinsUpdateDoesNotAffectLives() {
         hud.updateCoins(5);
-        assertEquals("Lives: 3", hud.getLivesLabel().getText());
+        assertEquals("Lives: 5", hud.getLivesLabel().getText());
     }
 
     // MENU TESTING

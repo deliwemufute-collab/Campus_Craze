@@ -25,7 +25,7 @@ public class ScoreManager {
     public void reset() {
         score = 0;
         coins = 0;
-        lives = 3;
+        lives = 5;
         hudManager.updateScore(score);
         hudManager.updateCoins(coins);
         hudManager.updateLives(lives);
@@ -47,6 +47,7 @@ public class ScoreManager {
     public void loseLife() {
         lives = Math.max(0, lives - 1);
         hudManager.updateLives(lives);
+
         // trigger game over if no lives left
         if (lives == 0 && onGameOver != null) {
             onGameOver.run();
