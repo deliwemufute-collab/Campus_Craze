@@ -61,7 +61,7 @@ public class Player extends GameObject implements Collidable {
     private static final double MAX_SPEED_X  = 6.0;
 
     /** Maximum vertical speed — smaller than X to keep movement slight */
-    private static final double MAX_SPEED_Y  = 3.0;
+    private static final double MAX_SPEED_Y  = 5.0;
 
     /** Top boundary — how far forward player can move */
     private double minY;
@@ -93,8 +93,8 @@ public class Player extends GameObject implements Collidable {
         if (this.x < minX) this.x = minX;
         if (this.x + width > maxX) this.x = maxX - width;
         sprite.setX(this.x);
-        this.minY = startY - 80;
-        this.maxY = startY + 40;
+        this.minY = startY - 426;
+        this.maxY = startY + 100;
     }
 
     /** Called when LEFT arrow key is pressed */
@@ -145,12 +145,25 @@ public class Player extends GameObject implements Collidable {
             if (Math.abs(velocityX) < 0.1) velocityX = 0;
         }
 
-        // --- CLAMP VELOCITY TO MAX SPEED ---
-        velocityX = Math.max(-MAX_SPEED_X, Math.min(MAX_SPEED_X, velocityX));
-        velocityY = 0;
+        // --- VERTICAL VELOCITY ---
+        if (movingUp)   velocityY -= ACCELERATION;
+        if (movingDown) velocityY += ACCELERATION;
+        if (!movingUp && !movingDown) {
+            velocityY *= DECELERATION;
+            if (Math.abs(velocityY) < 0.1) velocityY = 0;
+        }
 
-        // --- APPLY VELOCITY TO POSITION ---
+// --- CLAMP VELOCITY TO MAX SPEED ---
+        velocityX = Math.max(-MAX_SPEED_X, Math.min(MAX_SPEED_X, velocityX));
+        velocityY = Math.max(-MAX_SPEED_Y, Math.min(MAX_SPEED_Y, velocityY));
+
+// --- APPLY VELOCITY TO POSITION ---
         x += velocityX;
+        y += velocityY;
+
+// --- CLAMP Y BOUNDARIES ---
+        if (y < minY) { y = minY; velocityY = 0; }
+        if (y > maxY) { y = maxY; velocityY = 0; }
 
         // --- CLAMP TO BOUNDARIES ---
         if (x < minX)         { x = minX;         velocityX = 0; }
