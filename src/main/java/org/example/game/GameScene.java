@@ -6,7 +6,9 @@ import javafx.scene.image.Image;
 import javafx.scene.layout.Pane;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class GameScene {
 
@@ -22,6 +24,11 @@ public class GameScene {
     // --- Core pane ---
     private final Pane gamePane;
 
+    private List<Coin> coins = new ArrayList<>();
+    private Image coinImage;
+
+
+
     // --- Game objects ---
     private Player player;
     private ObstacleManager obstacleManager;
@@ -31,10 +38,10 @@ public class GameScene {
 
     // --- Centralized game object list ---
     private final List<GameObject> gameObjects = new ArrayList<>();
+    private final Set<GameObject> managedObjects = new HashSet<>();
 
     // --- Game loop ---
     private AnimationTimer gameLoop;
-    private long lastScoreTime = 0;
 
     // pause and mute state
     private boolean isPaused = false;
@@ -64,6 +71,7 @@ public class GameScene {
     private long   gameStartNano  = 0;
     private double elapsedSeconds = 0;
     private long   lastScoreNano  = 0;
+    private long   lastFrameNano  = 0;
 
     //Collision Feedback
     private CollisionFeedback feedback;
@@ -83,9 +91,12 @@ public class GameScene {
     // ===============================
 
     public void initializeGameObjects() {
+        if (feedback == null) {
+            feedback = new CollisionFeedback(gamePane, screenWidth, screenHeight);
+        }
         setupScenery();
-        setupPlayer();
         setupHUD();
+        setupPlayer();
         setupObstacles();
 
     }
@@ -150,8 +161,9 @@ public class GameScene {
 
     private void setupPlayer() {
         Image playerImage = new Image(getClass().getResourceAsStream("/Player/player_dummy.png"));
+        double pw = playerImage.getWidth();
         player = new Player(playerImage,
-                screenWidth / 2,
+                screenWidth / 2.0 - pw / 2.0,
                 screenHeight - 150,
                 ROAD_LEFT_X,
                 ROAD_RIGHT_X);
@@ -169,6 +181,7 @@ public class GameScene {
 
         obstacleManager.setScoreManager(scoreManager);
         obstacleManager.setFeedback(feedback);
+        obstacleManager.setPlayer(player);
 
         if (feedback == null) {
             System.out.println("WARNING: feedback is null (screen shake disabled)");
@@ -176,6 +189,7 @@ public class GameScene {
 
         List<GameObject> spawned = obstacleManager.spawnInitialObjects();
         gameObjects.addAll(spawned);
+        managedObjects.addAll(spawned);
 
         System.out.println("GameScene: obstacles spawned via manager.");
 
@@ -224,9 +238,10 @@ public class GameScene {
 
         scoreManager = new ScoreManager(hudManager);
 
-        player.setScoreManager(scoreManager);
+        if (player != null) {
+            player.setScoreManager(scoreManager);
+        }
 
-        // if obstacleManager already exists, re-inject
         if (obstacleManager != null) {
             obstacleManager.setScoreManager(scoreManager);
         }
@@ -242,25 +257,21 @@ public class GameScene {
             public void handle(long now) {
                 if (gameStartNano == 0) {
                     gameStartNano = now;
+                    lastFrameNano = now;
                     lastScoreNano = now;
                 }
 
+                double deltaSeconds = (now - lastFrameNano) / 1_000_000_000.0;
+                lastFrameNano = now;
+
                 elapsedSeconds = (now - gameStartNano) / 1_000_000_000.0;
 
-                // increment score once per second
                 if (now - lastScoreNano >= 1_000_000_000L) {
                     scoreManager.incrementScore();
                     lastScoreNano = now;
                 }
 
-                update();
-
-                // Increment score once per second (now is in nanoseconds)
-                if (lastScoreTime == 0) lastScoreTime = now;
-                if (now - lastScoreTime >= 1_000_000_000L) {
-                    scoreManager.incrementScore();
-                    lastScoreTime = now;
-                }
+                update(deltaSeconds);
             }
         };
         gameLoop.start();
@@ -278,8 +289,7 @@ public class GameScene {
             switch (e.getCode()) {
                 case LEFT  -> player.moveLeft();
                 case RIGHT -> player.moveRight();
-                case UP    -> player.moveUp();
-                case DOWN  -> player.moveDown();
+                // vertical movement disabled — objects should scroll past player
             }
         });
 
@@ -288,8 +298,7 @@ public class GameScene {
             switch (e.getCode()) {
                 case LEFT  -> player.stopLeft();
                 case RIGHT -> player.stopRight();
-                case UP    -> player.stopUp();
-                case DOWN  -> player.stopDown();
+                // vertical movement disabled — objects should scroll past player
 
             }
         });
@@ -298,32 +307,39 @@ public class GameScene {
     // ===============================
     // Update / Frame Handling
     // ===============================
+    /** Used by tests; assumes ~60 FPS when the real loop is not running. */
     public void update() {
-        // --- Theme transition checks ---
-        // City is the opening theme. Transitions fire on score milestones.
-        // switchTheme(outgoingTop, incomingStart, incomingMids) — the outgoing
-        // top tile plays once on the next recycle before the new start tile appears.
+        update(1.0 / 60.0);
+    }
 
-        int score = scoreManager.getScore();
-
-        if (!switchedToPark && score >= 100) {
+    public void update(double deltaSeconds) {
+        // --- Scenery theme transition (still every 50 seconds) ---
+        if (!switchedToPark && elapsedSeconds >= 50) {
             switchedToPark = true;
             sceneryManager.switchTheme(cityTop, parkStart, parkMids);
-        } else if (!switchedToSubway && score >= 200) {
+        } else if (!switchedToSubway && elapsedSeconds >= 100) {
             switchedToSubway = true;
             sceneryManager.switchTheme(parkTop, subwayStart, subwayMids);
         }
 
+        obstacleManager.setElapsedSeconds(elapsedSeconds);
+        obstacleManager.updateSpawning(deltaSeconds);
+
         // Scroll and recycle scenery
         sceneryManager.update();
 
-        // Polymorphic update for non-scenery objects only
+        // Polymorphic update: obstacles/coins scroll via ObstacleManager only
         for (GameObject obj : gameObjects) {
             if (obj instanceof SceneryTile) continue;
+            if (obj instanceof Obstacle) continue;
+            if (obj instanceof Coin) continue;
             obj.update();
         }
 
-        obstacleManager.scrollObstacles(screenHeight);
+        obstacleManager.setPlayer(player);
+        obstacleManager.scrollObstacles(screenHeight, player);
+        obstacleManager.checkCollisions(player);
+        syncManagedObjects();
 
         double newSpeed = obstacleManager.getScrollSpeed();
 
@@ -372,12 +388,54 @@ public class GameScene {
         }
     }
 
+    private void syncManagedObjects() {
+        for (Obstacle obstacle : obstacleManager.getObstacles()) {
+            if (!gameObjects.contains(obstacle)) {
+                gameObjects.add(obstacle);
+            }
+            managedObjects.add(obstacle);
+        }
+
+        for (Coin coin : obstacleManager.getCoins()) {
+            if (!gameObjects.contains(coin)) {
+                gameObjects.add(coin);
+            }
+            managedObjects.add(coin);
+        }
+
+        java.util.Iterator<GameObject> iterator = gameObjects.iterator();
+        while (iterator.hasNext()) {
+            GameObject obj = iterator.next();
+            if (!managedObjects.contains(obj)) {
+                continue;
+            }
+
+            boolean removeManagedObstacle = obj instanceof Obstacle
+                    && !obstacleManager.getObstacles().contains(obj);
+            boolean removeManagedCoin = obj instanceof Coin
+                    && !obstacleManager.getCoins().contains(obj);
+
+            if (removeManagedObstacle || removeManagedCoin) {
+                iterator.remove();
+                managedObjects.remove(obj);
+            }
+        }
+    }
+
     /** True for pairs already handled by ObstacleManager — prevents double collision. */
     private boolean isManagedPair(GameObject a, GameObject b) {
-
-        // Ignore Obstacle <-> Coin collisions
         if ((a instanceof Obstacle && b instanceof Coin) ||
                 (a instanceof Coin && b instanceof Obstacle)) {
+            return true;
+        }
+
+        if ((a instanceof Player && b instanceof Obstacle) ||
+                (a instanceof Obstacle && b instanceof Player)) {
+            return true;
+        }
+
+        if ((a instanceof Player && b instanceof Coin) ||
+                (a instanceof Coin && b instanceof Player)) {
             return true;
         }
 
@@ -415,7 +473,7 @@ public class GameScene {
     }
 
     public void setObstacleManager(ObstacleManager manager) {
-        this.obstacleManager = obstacleManager;
+        this.obstacleManager = manager;
     }
 
     public ObstacleManager  getObstacleManager() {
