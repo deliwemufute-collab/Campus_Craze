@@ -36,6 +36,10 @@ public class GameScene {
     private AnimationTimer gameLoop;
     private long lastScoreTime = 0;
 
+    // pause and mute state
+    private boolean isPaused = false;
+    private javafx.scene.media.MediaPlayer mediaPlayer;
+
     // --- Theme assets ---
     // City (opening theme — no dummy tiles in production)
     private Image cityStart;
@@ -185,6 +189,39 @@ public class GameScene {
         hudManager   = new HUDManager(gamePane);
         hudManager.setupHUD();
 
+        // wire mute button to toggle music
+        hudManager.setOnMute(() -> {
+            if (mediaPlayer != null) {
+                if (mediaPlayer.getStatus() == javafx.scene.media.MediaPlayer.Status.PLAYING) {
+                    mediaPlayer.pause();
+                } else {
+                    mediaPlayer.play();
+                }
+            }
+        });
+
+        // wire pause button to pause game and show pause screen
+        hudManager.setOnPause(() -> {
+            if (!isPaused) {
+                gameLoop.stop();
+                isPaused = true;
+                Pane pausePane = new Pane();
+                pausePane.setPrefWidth(1024);
+                pausePane.setPrefHeight(768);
+                gamePane.getChildren().add(pausePane);
+                pausePane.toFront();
+                pausePane.requestFocus();
+                pausePane.setOnMouseClicked(e -> e.consume());
+
+                org.example.menu.PauseScene pauseScene = new org.example.menu.PauseScene(pausePane);
+                pauseScene.setOnResume(() -> {
+                    gamePane.getChildren().remove(pausePane);
+                    gameLoop.start();
+                    isPaused = false;
+                });
+            }
+        });
+
         scoreManager = new ScoreManager(hudManager);
 
         player.setScoreManager(scoreManager);
@@ -229,6 +266,7 @@ public class GameScene {
         gameLoop.start();
         System.out.println("GameScene: loop started.");
     }
+
 
     public void stopGameLoop() {
         if (gameLoop != null) gameLoop.stop();
@@ -354,12 +392,22 @@ public class GameScene {
     public SceneryManager getSceneryManager() { return sceneryManager; }
     public List<GameObject> getGameObjects() { return gameObjects; }
 
+    public ScoreManager getScoreManager()   { return scoreManager; }
+
+
     // ===============================
     // Setters
     // ===============================
+
+
     // Used by tests to inject a dummy ScoreManager and SceneryManager
+
     void setScoreManager(ScoreManager scoreManager) {
         this.scoreManager = scoreManager;
+    }
+
+    public void setMediaPlayer(javafx.scene.media.MediaPlayer mediaPlayer) {
+        this.mediaPlayer = mediaPlayer;
     }
 
     void setSceneryManager(SceneryManager sceneryManager) {
@@ -377,5 +425,6 @@ public class GameScene {
     public void setFeedback(CollisionFeedback feedback) {
         this.feedback = feedback;
     }
+
 
 }
