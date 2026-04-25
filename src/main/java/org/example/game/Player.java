@@ -177,13 +177,21 @@ public class Player extends GameObject implements Collidable {
     }
 
     /** Returns bounding box for collision detection */
+    /**
+     * Returns a reduced bounding box for collision detection.
+     * shrinks hitbox by 20% on all sides to prevent
+     * unfair collisions where the player visually misses but still gets hit.
+     */
     @Override
     public Bounds getBounds() {
+        double leeway = 0.20;
+        double offsetX = width  * leeway;
+        double offsetY = height * leeway;
         return new BoundingBox(
-                x,
-                y,
-                width,
-                height
+                x      + offsetX,
+                y      + offsetY,
+                width  - offsetX * 2,
+                height - offsetY * 2
         );
     }
 
