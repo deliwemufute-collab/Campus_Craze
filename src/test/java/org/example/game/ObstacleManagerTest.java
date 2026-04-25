@@ -19,30 +19,30 @@ class ObstacleManagerTest {
     }
 
     @Test
-    void setElapsedSeconds_selectsCityForFirstHundredSeconds() {
+    void setElapsedSeconds_selectsCityForFirstFiftySeconds() {
         ObstacleManager om = new ObstacleManager(
                 new Pane(), new WritableImage(1, 1), new WritableImage(1, 1));
         om.setElapsedSeconds(0);
         assertEquals(Obstacle.Theme.CITY, om.getCurrentTheme());
-        om.setElapsedSeconds(99.9);
+        om.setElapsedSeconds(51.9);
         assertEquals(Obstacle.Theme.CITY, om.getCurrentTheme());
     }
 
     @Test
-    void setElapsedSeconds_selectsParkForSecondHundredSeconds() {
+    void setElapsedSeconds_selectsParkForSecondFiftySeconds() {
         ObstacleManager om = new ObstacleManager(
                 new Pane(), new WritableImage(1, 1), new WritableImage(1, 1));
-        om.setElapsedSeconds(100);
+        om.setElapsedSeconds(52);
         assertEquals(Obstacle.Theme.PARK, om.getCurrentTheme());
-        om.setElapsedSeconds(199.9);
+        om.setElapsedSeconds(103.9);
         assertEquals(Obstacle.Theme.PARK, om.getCurrentTheme());
     }
 
     @Test
-    void setElapsedSeconds_selectsSubwayAfterTwoHundredSeconds() {
+    void setElapsedSeconds_selectsSubwayAfterOneHundredSeconds() {
         ObstacleManager om = new ObstacleManager(
                 new Pane(), new WritableImage(1, 1), new WritableImage(1, 1));
-        om.setElapsedSeconds(200);
+        om.setElapsedSeconds(104);
         assertEquals(Obstacle.Theme.SUBWAY, om.getCurrentTheme());
         om.setElapsedSeconds(500);
         assertEquals(Obstacle.Theme.SUBWAY, om.getCurrentTheme());

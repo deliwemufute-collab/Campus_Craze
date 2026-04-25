@@ -275,11 +275,11 @@ public class GameScene {
     }
 
     public void update(double deltaSeconds) {
-        // --- Theme transition checks (0-108 city, 108-208 park, 208+ subway) ---
-        if (!switchedToPark && elapsedSeconds >= 108) {
+        // --- Scenery theme transition (still every 50 seconds) ---
+        if (!switchedToPark && elapsedSeconds >= 50) {
             switchedToPark = true;
             sceneryManager.switchTheme(cityTop, parkStart, parkMids);
-        } else if (!switchedToSubway && elapsedSeconds >= 208) {
+        } else if (!switchedToSubway && elapsedSeconds >= 100) {
             switchedToSubway = true;
             sceneryManager.switchTheme(parkTop, subwayStart, subwayMids);
         }

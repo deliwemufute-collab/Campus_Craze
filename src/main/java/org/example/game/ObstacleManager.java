@@ -28,7 +28,6 @@ public class ObstacleManager {
     private final List<Coin> coins = new ArrayList<>();
 
     private final Map<Obstacle, MovingKind> movingObstacles = new IdentityHashMap<>();
-    private final Map<Obstacle, Double> movingVerticalOffsets = new IdentityHashMap<>();
 
     private ScoreManager scoreManager;
     private CollisionFeedback feedback;
@@ -43,19 +42,25 @@ public class ObstacleManager {
     private final Random rng = new Random();
 
     private static final double[] LANES = {380, 480, 580};
-    // Theme timing (seconds)
-    private static final double THEME_CITY_END_SECONDS = 108.0;
-    private static final double THEME_PARK_END_SECONDS = 208.0;
+    // Obstacle-set timing (seconds): obstacles switch at 52s,
+    // while scenery theme still changes at 50s (handled in GameScene).
+    private static final double THEME_CITY_END_SECONDS = 52.0;
+    private static final double THEME_PARK_END_SECONDS = 104.0;
 
-    // Moving obstacles should stop SPAWNING 10s before the theme switch,
-    // but any already spawned should keep moving until they naturally leave screen.
-    private static final double CITY_LARGE_SPAWN_END_SECONDS = THEME_CITY_END_SECONDS - 10.0;      // 98s
-    private static final double PARK_LARGE_1_SPAWN_END_SECONDS = THEME_PARK_END_SECONDS - 10.0;   // 198s
+    // Moving obstacles stop SPAWNING 10s before the theme switch; spawned ones keep scrolling.
+    private static final double CITY_LARGE_SPAWN_END_SECONDS = THEME_CITY_END_SECONDS - 10.0;       // 42s
+    private static final double PARK_LARGE_1_SPAWN_END_SECONDS = THEME_PARK_END_SECONDS - 10.0;    // 94s
+
+    /** Lower = drawn on top in JavaFX. Player uses {@link Player#VIEW_ORDER}. */
+    public static final double MOVING_OBSTACLE_VIEW_ORDER = -28.0;
 
     private static final double SPAWN_INTERVAL = 1.2;
     private static final double OBJECT_SPAWN_PADDING = 18.0;
-    private static final double MOVING_TRACKING_BLEND = 0.20;
-    private static final double MIN_MOVING_Y = 40.0;
+
+    // Coin patterns
+    private final java.util.ArrayDeque<CoinSpawn> pendingCoinSpawns = new java.util.ArrayDeque<>();
+
+    private record CoinSpawn(double laneCenterX, double startY) {}
 
     // Theme assets
     private Image[] citySmall;
@@ -204,8 +209,70 @@ public class ObstacleManager {
         if (spawnTimer >= SPAWN_INTERVAL) {
             spawnTimer = 0;
             spawnObstacleInFreeLane();
-            spawnCoinInFreeLane();
+            spawnCoins();
         }
+    }
+
+    private void spawnCoins() {
+        // Spawn a small burst per tick so coins are much more frequent.
+        // (Placement checks still prevent overlaps.)
+        final int coinsPerTick = 3;
+
+        // Always keep a pattern queued so the screen has visible coin sequences.
+        if (pendingCoinSpawns.isEmpty()) {
+            enqueueCoinPattern();
+        }
+
+        for (int i = 0; i < coinsPerTick; i++) {
+            if (pendingCoinSpawns.isEmpty()) {
+                enqueueCoinPattern();
+            }
+            CoinSpawn next = pendingCoinSpawns.pollFirst();
+            if (next == null) {
+                spawnCoinInFreeLane();
+                continue;
+            }
+            spawnCoin(next.laneCenterX(), next.startY());
+        }
+    }
+
+    private void enqueueCoinPattern() {
+        int pattern = rng.nextInt(3);
+        double baseY = -140;
+
+        if (pattern == 0) {
+            // Same-lane line: 6 coins spaced out vertically
+            double lane = LANES[rng.nextInt(LANES.length)];
+            pendingCoinSpawns.addLast(new CoinSpawn(lane, baseY));
+            pendingCoinSpawns.addLast(new CoinSpawn(lane, baseY - 55));
+            pendingCoinSpawns.addLast(new CoinSpawn(lane, baseY - 110));
+            pendingCoinSpawns.addLast(new CoinSpawn(lane, baseY - 165));
+            pendingCoinSpawns.addLast(new CoinSpawn(lane, baseY - 220));
+            pendingCoinSpawns.addLast(new CoinSpawn(lane, baseY - 275));
+            return;
+        }
+
+        if (pattern == 1) {
+            // Zigzag across lanes (6 coins)
+            int start = rng.nextInt(LANES.length);
+            pendingCoinSpawns.addLast(new CoinSpawn(LANES[start], baseY));
+            pendingCoinSpawns.addLast(new CoinSpawn(LANES[(start + 1) % LANES.length], baseY - 60));
+            pendingCoinSpawns.addLast(new CoinSpawn(LANES[(start + 2) % LANES.length], baseY - 120));
+            pendingCoinSpawns.addLast(new CoinSpawn(LANES[(start + 1) % LANES.length], baseY - 180));
+            pendingCoinSpawns.addLast(new CoinSpawn(LANES[start], baseY - 240));
+            pendingCoinSpawns.addLast(new CoinSpawn(LANES[(start + 1) % LANES.length], baseY - 300));
+            return;
+        }
+
+        // Two-lane alternation (6 coins)
+        int a = rng.nextInt(LANES.length);
+        int b = (a + 1 + rng.nextInt(LANES.length - 1)) % LANES.length;
+        pendingCoinSpawns.addLast(new CoinSpawn(LANES[a], baseY));
+        pendingCoinSpawns.addLast(new CoinSpawn(LANES[b], baseY - 55));
+        pendingCoinSpawns.addLast(new CoinSpawn(LANES[a], baseY - 110));
+        pendingCoinSpawns.addLast(new CoinSpawn(LANES[b], baseY - 165));
+        pendingCoinSpawns.addLast(new CoinSpawn(LANES[a], baseY - 220));
+        pendingCoinSpawns.addLast(new CoinSpawn(LANES[b], baseY - 275));
     }
 
     public Obstacle spawnObstacle(double centreX, double startY) {
@@ -259,11 +326,6 @@ public class ObstacleManager {
             Obstacle obstacle = obstacleIterator.next();
             MovingKind kind = movingObstacles.get(obstacle);
 
-            if (kind != null && !isMovingObstacleStillAllowed(kind)) {
-                removeObstacle(obstacleIterator, obstacle);
-                continue;
-            }
-
             // Moving "vehicle" obstacles drive past from behind (bottom -> top).
             if (kind == MovingKind.CITY_LARGE || kind == MovingKind.PARK_LARGE_1) {
                 obstacle.scrollUp(scrollSpeed);
@@ -310,7 +372,9 @@ public class ObstacleManager {
 
         Bounds playerBounds = player.getBounds();
 
-        for (Obstacle obstacle : obstacles) {
+        Iterator<Obstacle> obstacleIterator = obstacles.iterator();
+        while (obstacleIterator.hasNext()) {
+            Obstacle obstacle = obstacleIterator.next();
             if (!obstacle.getBounds().intersects(playerBounds)) {
                 continue;
             }
@@ -322,6 +386,10 @@ public class ObstacleManager {
                 }
             }
             player.onCollision(obstacle);
+
+            obstacleIterator.remove();
+            movingObstacles.remove(obstacle);
+            gamePane.getChildren().remove(obstacle.getSprite());
         }
 
         Iterator<Coin> coinIterator = coins.iterator();
@@ -343,13 +411,7 @@ public class ObstacleManager {
 
     private void initializeMovingObstacle(Obstacle obstacle, MovingKind kind) {
         movingObstacles.put(obstacle, kind);
-        double offset;
-        if (kind == MovingKind.CITY_LARGE) {
-            offset = 180 + rng.nextDouble() * 70;
-        } else {
-            offset = 150 + rng.nextDouble() * 65;
-        }
-        movingVerticalOffsets.put(obstacle, offset);
+        obstacle.getSprite().setViewOrder(MOVING_OBSTACLE_VIEW_ORDER);
 
         if (kind == MovingKind.CITY_LARGE || kind == MovingKind.PARK_LARGE_1) {
             // Start just below the screen so it drives upward past the player.
@@ -357,18 +419,9 @@ public class ObstacleManager {
         }
     }
 
-    private boolean isMovingObstacleStillAllowed(MovingKind kind) {
-        if (kind == MovingKind.CITY_LARGE) {
-            return elapsedSeconds < CITY_LARGE_SPAWN_END_SECONDS;
-        }
-        return elapsedSeconds >= THEME_CITY_END_SECONDS
-                && elapsedSeconds < PARK_LARGE_1_SPAWN_END_SECONDS;
-    }
-
     private void removeObstacle(Iterator<Obstacle> iterator, Obstacle obstacle) {
         iterator.remove();
         movingObstacles.remove(obstacle);
-        movingVerticalOffsets.remove(obstacle);
         gamePane.getChildren().remove(obstacle.getSprite());
     }
 
@@ -384,7 +437,7 @@ public class ObstacleManager {
             }
             // Reduce CITY_LARGE frequency by giving it a low chance to enter the pool.
             // (It already stops spawning 10s before the theme switch.)
-            if (elapsedSeconds < CITY_LARGE_SPAWN_END_SECONDS && rng.nextInt(5) == 0) { // ~20% chance
+            if (elapsedSeconds < CITY_LARGE_SPAWN_END_SECONDS && rng.nextInt(2) == 0) { // ~50% chance
                 for (Image image : cityLarge) {
                     pool.add(new SpawnConfig(image, Obstacle.Size.LARGE, MovingKind.CITY_LARGE));
                 }

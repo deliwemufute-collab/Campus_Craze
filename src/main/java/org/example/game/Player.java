@@ -16,6 +16,9 @@ import javafx.scene.paint.Color;
 
 public class Player extends GameObject implements Collidable {
 
+    /** Lower = drawn on top in JavaFX (above road/scenery and moving obstacles). */
+    public static final double VIEW_ORDER = -30.0;
+
     private long lastObstacleCollisionTime = 0;
     private static final long OBSTACLE_COLLISION_COOLDOWN_MS = 2000;
     // 2.0 seconds
@@ -82,6 +85,7 @@ public class Player extends GameObject implements Collidable {
                   double roadLeft, double roadRight) {
         super(startX, startY, spriteImage.getWidth(), spriteImage.getHeight());
         this.sprite = new ImageView(spriteImage);
+        this.sprite.setViewOrder(VIEW_ORDER);
         this.sprite.setX(startX);
         this.sprite.setY(startY);
         this.minX = roadLeft;
