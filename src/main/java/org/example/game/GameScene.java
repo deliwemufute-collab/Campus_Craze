@@ -289,7 +289,8 @@ public class GameScene {
             switch (e.getCode()) {
                 case LEFT  -> player.moveLeft();
                 case RIGHT -> player.moveRight();
-                // vertical movement disabled — objects should scroll past player
+                case UP    -> player.moveUp();
+                case DOWN  -> player.moveDown();
             }
         });
 
@@ -298,8 +299,8 @@ public class GameScene {
             switch (e.getCode()) {
                 case LEFT  -> player.stopLeft();
                 case RIGHT -> player.stopRight();
-                // vertical movement disabled — objects should scroll past player
-
+                case UP    -> player.stopUp();
+                case DOWN  -> player.stopDown();
             }
         });
     }
