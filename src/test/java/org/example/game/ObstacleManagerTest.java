@@ -19,7 +19,7 @@ class ObstacleManagerTest {
     }
 
     @Test
-    void setElapsedSeconds_selectsCityForFirstFiftySeconds() {
+    void setElapsedSeconds_selectsCityBefore52Seconds() {
         ObstacleManager om = new ObstacleManager(
                 new Pane(), new WritableImage(1, 1), new WritableImage(1, 1));
         om.setElapsedSeconds(0);
@@ -29,7 +29,7 @@ class ObstacleManagerTest {
     }
 
     @Test
-    void setElapsedSeconds_selectsParkForSecondFiftySeconds() {
+    void setElapsedSeconds_selectsParkFrom52To104Seconds() {
         ObstacleManager om = new ObstacleManager(
                 new Pane(), new WritableImage(1, 1), new WritableImage(1, 1));
         om.setElapsedSeconds(52);
@@ -39,7 +39,7 @@ class ObstacleManagerTest {
     }
 
     @Test
-    void setElapsedSeconds_selectsSubwayAfterOneHundredSeconds() {
+    void setElapsedSeconds_selectsSubwayAtOrAfter104Seconds() {
         ObstacleManager om = new ObstacleManager(
                 new Pane(), new WritableImage(1, 1), new WritableImage(1, 1));
         om.setElapsedSeconds(104);
